@@ -1,116 +1,140 @@
 
-import { LOG_ENABLED, LOG_LEVEL } from '../env';
-
-// Níveis de log em ordem de prioridade
-const LOG_LEVELS = {
-  debug: 0,
-  info: 1,
-  warn: 2,
-  error: 3
-};
-
-// Cores para console
-const COLORS = {
-  debug: '#6495ED', // Azul
-  info: '#4CAF50',  // Verde
-  warn: '#FF9800',  // Laranja
-  error: '#F44336', // Vermelho
-  reset: ''
-};
-
-// Flag para prevenir recursão infinita no monitoramento de CORS
-let isMonitoringCORS = false;
+// Serviço de log para monitorar o funcionamento da aplicação
+import { LOG_ENABLED, LOG_LEVEL, DEBUG_MODE } from "../env";
 
 export class LogService {
   static debug(message: string, data?: any): void {
-    LogService.log('debug', message, data);
+    if (LOG_ENABLED && (LOG_LEVEL === 'debug' || DEBUG_MODE)) {
+      this.log(message, data, 'DEBUG', '#6495ED');
+    }
   }
 
   static info(message: string, data?: any): void {
-    LogService.log('info', message, data);
+    if (LOG_ENABLED && ['debug', 'info'].includes(LOG_LEVEL)) {
+      this.log(message, data, 'INFO', '#4CAF50');
+    }
   }
 
   static warn(message: string, data?: any): void {
-    LogService.log('warn', message, data);
+    if (LOG_ENABLED && ['debug', 'info', 'warn'].includes(LOG_LEVEL)) {
+      this.log(message, data, 'WARN', '#FF9800');
+    }
   }
 
   static error(message: string, data?: any): void {
-    LogService.log('error', message, data);
+    if (LOG_ENABLED) {
+      this.log(message, data, 'ERROR', '#F44336');
+      console.error(`[${new Date().toISOString()}] [ERROR] ${message}`, data);
+    }
   }
 
-  static log(level: 'debug' | 'info' | 'warn' | 'error', message: string, data?: any): void {
-    if (!LOG_ENABLED) return;
-    
-    // Só loga se o nível atual for igual ou maior que o configurado
-    if (LOG_LEVELS[level] < LOG_LEVELS[LOG_LEVEL]) return;
-    
+  static log(message: string, data: any, level: string, color: string): void {
     const timestamp = new Date().toISOString();
-    const prefix = `[${timestamp}] [${level.toUpperCase()}]`;
+    const formattedMessage = `[${timestamp}] [${level}] ${message}`;
     
-    // Log colorido no console
-    const color = COLORS[level];
+    console.info(`%c${formattedMessage}`, `color: ${color}; font-weight: bold`);
     
-    if (level === 'error') {
-      console.error(`%c${prefix} ${message}`, `color: ${color}; font-weight: bold`);
-      if (data instanceof Error) {
-        console.error(data);
-      } else if (data) {
-        console.error(data);
-      }
-    } else {
-      console.log(`%c${prefix} ${message}`, `color: ${color}; font-weight: bold`);
-      if (data) {
-        console.log(data);
-      }
-    }
-    
-    // Monitorar problemas de CORS sem causar recursão infinita
-    if (!isMonitoringCORS && (message.includes('CORS') || (data && JSON.stringify(data).includes('CORS')))) {
-      isMonitoringCORS = true;
-      try {
-        // Uma única mensagem de aviso sem criar loop
-        console.warn(`%c[${timestamp}] [WARN] ⚠️ Possível problema de CORS detectado!`, `color: ${COLORS.warn}; font-weight: bold`);
-      } finally {
-        isMonitoringCORS = false;
+    if (data !== undefined) {
+      if (typeof data === 'object' && data !== null) {
+        console.info(data);
+      } else {
+        console.info(`Data: ${data}`);
       }
     }
   }
-  
-  // Método para inspecionar quando o navegador bloqueia o CORS
+
+  // Monitorar problemas específicos de CORS com o Google Sheets
   static monitorCORSErrors(): void {
-    const originalFetch = window.fetch;
+    this.info("🔍 Monitoramento de CORS ativado");
     
-    window.fetch = function(input, init) {
-      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    // Monitorar erros de rede que podem ser causados por CORS
+    const originalFetch = window.fetch;
+    window.fetch = function(...args) {
+      const request = args[0];
+      const url = typeof request === 'string' ? request : request.url;
       
-      LogService.debug(`🌐 Fetch iniciado: ${url}`);
+      // Verificar se é uma solicitação para o Google Apps Script
+      if (url && url.includes('script.google.com')) {
+        LogService.debug(`📤 Tentativa de fetch para Google Apps Script: ${url}`);
+      }
       
-      return originalFetch.apply(this, arguments)
-        .then(response => {
-          if (!response.ok) {
-            LogService.warn(`⚠️ Fetch retornou status: ${response.status} para ${url}`);
-          } else {
-            LogService.debug(`✅ Fetch bem-sucedido: ${url}`);
-          }
-          return response;
-        })
+      return originalFetch.apply(this, args)
         .catch(error => {
-          // Verificar se é erro de CORS sem causar recursão
-          if (error.message && (error.message.includes('CORS') || error.toString().includes('CORS'))) {
-            LogService.error(`🚫 Erro de CORS detectado: ${url}`, error);
-            LogService.info('Tente usar um dos métodos alternativos de envio de dados.');
-          } else {
-            LogService.error(`❌ Fetch falhou para: ${url}`, error);
+          if (error.message && (
+              error.message.includes('CORS') || 
+              error.message.includes('Failed to fetch') || 
+              error.message.includes('Network error')
+            )) {
+            LogService.warn("⚠️ Possível problema de CORS detectado!", error);
           }
           throw error;
         });
     };
     
-    LogService.info('🔍 Monitoramento de CORS ativado');
+    // Capturar erros não tratados que podem ser causados por CORS
+    window.addEventListener('error', function(event) {
+      if (event.message && (
+        event.message.includes('CORS') || 
+        event.message.includes('Failed to fetch') || 
+        event.message.includes('Network error')
+      )) {
+        LogService.warn("⚠️ Erro de CORS detectado em evento global!", event);
+      }
+    });
+    
+    // Monitorar rejeições de promessas não tratadas
+    window.addEventListener('unhandledrejection', function(event) {
+      const reason = event.reason;
+      if (reason && reason.message && (
+        reason.message.includes('CORS') || 
+        reason.message.includes('Failed to fetch') || 
+        reason.message.includes('Network error')
+      )) {
+        LogService.warn("⚠️ Problema de CORS em promessa não tratada!", reason);
+      }
+    });
   }
-}
-
-// Iniciar monitoramento de CORS automaticamente
-if (LOG_ENABLED && (LOG_LEVEL === 'debug' || LOG_LEVEL === 'info')) {
-  LogService.monitorCORSErrors();
+  
+  // Função para validar resposta da submissão ao Google Sheets
+  static validateGoogleSheetsResponse(response: any): boolean {
+    this.debug("🔍 Validando resposta do Google Sheets", response);
+    
+    if (!response) {
+      this.error("❌ Resposta nula do Google Sheets");
+      return false;
+    }
+    
+    if (typeof response === 'object') {
+      if (response.success === true) {
+        this.info("✅ Resposta válida com sucesso=true");
+        return true;
+      } else {
+        this.warn("⚠️ Resposta com sucesso=false", response);
+        return false;
+      }
+    } else if (typeof response === 'string') {
+      try {
+        const parsed = JSON.parse(response);
+        if (parsed.success === true) {
+          this.info("✅ String JSON parseada com sucesso=true");
+          return true;
+        } else {
+          this.warn("⚠️ String JSON parseada com sucesso=false", parsed);
+          return false;
+        }
+      } catch (e) {
+        // Não é JSON, verificar se contém palavras-chave
+        if (response.includes('success') || response.includes('sucesso')) {
+          this.info("✅ String contém indicação de sucesso");
+          return true;
+        } else {
+          this.warn("⚠️ String não contém indicação de sucesso", response);
+          return false;
+        }
+      }
+    }
+    
+    this.error("❌ Formato de resposta desconhecido", response);
+    return false;
+  }
 }

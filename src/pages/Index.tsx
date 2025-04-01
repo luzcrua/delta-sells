@@ -4,6 +4,7 @@ import { LogService } from "@/services/LogService";
 import { isWebhookConfigured } from "@/services/GoogleSheetsService";
 import LeadForm from "@/components/LeadForm";
 import CustomerForm from "@/components/CustomerForm";
+import DiagnosticsPanel from "@/components/DiagnosticsPanel";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("cliente");
@@ -37,6 +38,11 @@ const Index = () => {
               </p>
             </div>
           )}
+          
+          {/* Painel de diagnóstico */}
+          <div className="mt-4">
+            <DiagnosticsPanel />
+          </div>
         </header>
 
         <div className="flex justify-center mb-6 border-b border-delta-200">
