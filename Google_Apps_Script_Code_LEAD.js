@@ -4,6 +4,9 @@
  * 
  * Este script deve ser implementado no Apps Script da planilha de Leads
  * e depois publicado como aplicativo da web para receber dados de formulários.
+ * 
+ * IMPORTANTE: Cole este código no Apps Script da planilha:
+ * https://docs.google.com/spreadsheets/d/1NA-iPBQkAZ-ZG7IST9tUkTCZPHQkuHT1aazRdmcXu14/edit?usp=sharing
  */
 
 // Função que será chamada quando o Apps Script receber uma solicitação

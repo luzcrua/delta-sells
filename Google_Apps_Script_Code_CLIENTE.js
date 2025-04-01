@@ -4,6 +4,9 @@
  * 
  * Este script deve ser implementado no Apps Script da planilha Cliente
  * e depois publicado como aplicativo da web para receber dados de formulários.
+ * 
+ * IMPORTANTE: Cole este código no Apps Script da planilha:
+ * https://docs.google.com/spreadsheets/d/13DHwYtX13t6CJ3Fg5mMmPpNHT8rZt7Cio3JwB04ipHY/edit?gid=0#gid=0
  */
 
 // Função que será chamada quando o Apps Script receber uma solicitação
