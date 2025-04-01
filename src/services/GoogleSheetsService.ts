@@ -1,4 +1,3 @@
-
 // This file provides helpers for Google Sheets integration
 import { 
   GOOGLE_SHEETS_URL, 
@@ -66,6 +65,14 @@ function formatDataForWhatsApp(data: any): string {
     
     if (data.parcelamento) {
       message += `🔄 *Parcelamento:* ${data.parcelamento}\n`;
+      
+      if (data.valorParcela) {
+        message += `💵 *Valor da Parcela:* ${data.valorParcela}\n`;
+      }
+      
+      if (data.datasPagamento) {
+        message += `📅 *Datas de Pagamento:* ${data.datasPagamento}\n`;
+      }
     }
     
     if (data.cupom) {
@@ -122,7 +129,7 @@ function validateData(data: any): boolean {
   ).filter(field => {
     // Filtrar campos opcionais que podem estar vazios
     if (data.formType === 'cliente') {
-      if (['cpf', 'parcelamento', 'cupom', 'localizacao', 'observacao'].includes(field)) {
+      if (['cpf', 'parcelamento', 'cupom', 'localizacao', 'observacao', 'valorParcela', 'datasPagamento'].includes(field)) {
         return false;
       }
     } else if (data.formType === 'lead') {
@@ -306,7 +313,7 @@ function sendWithForm(url: string, data: any): Promise<any> {
           }
           cleanupResources();
           window.removeEventListener('message', messageHandler);
-          resolve({ result: "success", message: "Dados enviados com sucesso!" });
+          resolve({ result: "success", message: "Dados parecem ter sido enviados com sucesso!" });
         }, 3000); // Aumentamos o tempo para garantir que mensagens sejam processadas
       } catch (e) {
         LogService.info("Erro ao processar resposta do iframe, assumindo sucesso", e);
@@ -474,10 +481,10 @@ export function isWebhookConfigured(): boolean {
 /**
  * Retorna a URL de visualização da planilha com base no tipo de formulário
  */
-export function getGoogleSheetViewUrl(formType?: 'cliente' | 'lead'): string {
-  if (formType === 'lead') {
+export function getGoogleSheetViewUrl(type: 'cliente' | 'lead'): string {
+  if (type === 'lead') {
     return GOOGLE_SHEET_VIEW_URL.LEAD;
-  } else if (formType === 'cliente') {
+  } else if (type === 'cliente') {
     return GOOGLE_SHEET_VIEW_URL.CLIENTE;
   }
   return GOOGLE_SHEET_VIEW_URL.CLIENTE; // URL padrão se nenhum tipo for especificado

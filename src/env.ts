@@ -35,7 +35,7 @@ export const DEBUG_MODE: boolean = true;
 export const SHEET_COLUMNS = {
   CLIENTE: ["nome", "cpf", "telefone", "genero", "linha", "tipo", "cor", "tamanho", 
     "valor", "formaPagamento", "parcelamento", "jurosAplicado", "cupom", "localizacao", "frete", "dataPagamento", "dataEntrega", 
-    "valorTotal", "observacao"],
+    "valorTotal", "valorParcela", "datasPagamento", "observacao"],
   LEAD: ["nome", "telefone", "instagram", "interesse", "statusLead", "dataLembrete", 
     "motivoLembrete", "observacoes"]
 };

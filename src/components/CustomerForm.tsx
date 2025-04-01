@@ -21,7 +21,7 @@ import {
   getGoogleSheetViewUrl 
 } from "@/services/GoogleSheetsService";
 import { LogService } from "@/services/LogService";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 
 const CustomerForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,6 +33,8 @@ const CustomerForm = () => {
   const [jurosPersonalizado, setJurosPersonalizado] = useState("");
   const [isConfigured, setIsConfigured] = useState(false);
   const [showSheetLink, setShowSheetLink] = useState(false);
+  const [valorParcela, setValorParcela] = useState("");
+  const [datasPagamento, setDatasPagamento] = useState<string[]>([]);
   
   useEffect(() => {
     const configured = isWebhookConfigured();
@@ -78,18 +80,23 @@ const CustomerForm = () => {
   const frete = watch("frete");
   const parcelamento = watch("parcelamento");
   const jurosAplicado = watch("jurosAplicado");
+  const dataPagamento = watch("dataPagamento");
   
+  // Calcula o valor total considerando descontos, frete e parcelamento
   useEffect(() => {
     try {
+      // Limpa e converte o valor e frete para números
       const cleanValor = valor.replace(/[^\d,]/g, "").replace(",", ".");
       const cleanFrete = frete.replace(/[^\d,]/g, "").replace(",", ".");
       
+      // Parseia os valores para números
       const parsedValor = cleanValor ? parseFloat(cleanValor) : 0;
       const parsedFrete = cleanFrete ? parseFloat(cleanFrete) : 0;
       
       setValorNumerico(parsedValor);
       setFreteNumerico(parsedFrete);
       
+      // Calcula o desconto baseado no cupom selecionado
       let descontoPercentual = 0;
       
       if (cupom === "5% OFF") {
@@ -105,39 +112,67 @@ const CustomerForm = () => {
         }
       }
       
+      // Calcula o valor com desconto
       const desconto = (parsedValor * descontoPercentual) / 100;
       const valorComDesconto = parsedValor - desconto;
       
-      let valorFinal = valorComDesconto;
+      // Adiciona o frete ao valor com desconto
+      const valorComDescontoEFrete = valorComDesconto + parsedFrete;
       
-      // Aplicar juros se houver parcelamento com juros
+      // Inicializa o valor final (inclui possíveis juros em caso de parcelamento)
+      let valorFinal = valorComDescontoEFrete;
+      let valorParcelaCalculado = valorFinal;
+      let numParcelas = 1;
+      let datasParcelas: string[] = [];
+      
+      // Aplica juros se houver parcelamento
       if (parcelamento) {
-        const numParcelas = parseInt(parcelamento.split("x")[0]);
+        numParcelas = parseInt(parcelamento.split("x")[0]);
         
-        // Verificar se tem juros personalizado
+        // Verifica se tem juros personalizado
         if (jurosAplicado === "Personalizado" && jurosPersonalizado) {
           const taxaMatch = jurosPersonalizado.match(/(\d+)/);
           if (taxaMatch) {
             const taxaJuros = parseInt(taxaMatch[0]) / 100;
-            valorFinal = valorComDesconto * (1 + taxaJuros);
+            valorFinal = valorComDescontoEFrete * (1 + taxaJuros);
           }
-        }
-        // Aplicar juros padrão para parcelamento com juros
+        } 
+        // Aplica juros padrão para parcelamento com juros
         else if (parcelamento.includes("com juros")) {
           // Juros de 3% por parcela acima de 3x
           if (numParcelas > 3) {
             const taxaJuros = 0.03 * (numParcelas - 3);
-            valorFinal = valorComDesconto * (1 + taxaJuros);
+            valorFinal = valorComDescontoEFrete * (1 + taxaJuros);
           }
         }
+        
+        // Calcula o valor da parcela
+        valorParcelaCalculado = valorFinal / numParcelas;
+        
+        // Formata o valor da parcela
+        setValorParcela(formatCurrency(String(Math.round(valorParcelaCalculado * 100))));
+        
+        // Gera as datas de pagamento das parcelas
+        if (dataPagamento) {
+          const novasDatasParcelas = [];
+          for (let i = 0; i < numParcelas; i++) {
+            const dataParcela = addDays(dataPagamento, i * 30); // 30 dias entre cada parcela
+            novasDatasParcelas.push(format(dataParcela, "dd/MM/yy"));
+          }
+          setDatasPagamento(novasDatasParcelas);
+        } else {
+          setDatasPagamento([]);
+        }
+      } else {
+        setValorParcela("");
+        setDatasPagamento([]);
       }
       
-      const total = valorFinal + parsedFrete;
-      
-      // Arredondar para duas casas decimais
-      const totalArredondado = Math.round(total * 100) / 100;
+      // Arredonda para duas casas decimais
+      const totalArredondado = Math.round(valorFinal * 100) / 100;
       const totalEmCentavos = Math.round(totalArredondado * 100);
       
+      // Atualiza o valor total no formulário
       setValue("valorTotal", formatCurrency(String(totalEmCentavos)));
       
       LogService.debug("Valores atualizados", { 
@@ -146,20 +181,23 @@ const CustomerForm = () => {
         descontoPercentual, 
         desconto,
         valorComDesconto,
+        valorComDescontoEFrete,
         formaPagamento,
         parcelamento,
+        numParcelas,
         jurosAplicado,
         jurosPersonalizado,
+        valorParcelaCalculado,
         valorFinal,
-        total,
         totalArredondado,
-        totalEmCentavos
+        totalEmCentavos,
+        datasParcelas
       });
     } catch (error) {
       LogService.error("Erro ao calcular valor total", error);
       setValue("valorTotal", formatCurrency(String(parseFloat(frete.replace(/[^\d,]/g, "").replace(",", ".")) * 100 || 1500)));
     }
-  }, [valor, frete, cupom, customCupom, formaPagamento, parcelamento, jurosAplicado, jurosPersonalizado, setValue]);
+  }, [valor, frete, cupom, customCupom, formaPagamento, parcelamento, jurosAplicado, jurosPersonalizado, dataPagamento, setValue]);
 
   const handleInputChange = (field: keyof FormValues) => (e: ChangeEvent<HTMLInputElement>) => {
     setValue(field, e.target.value);
@@ -233,6 +271,8 @@ const CustomerForm = () => {
         jurosAplicado: data.jurosAplicado === "Personalizado" ? jurosPersonalizado : data.jurosAplicado,
         dataPagamento: data.dataPagamento ? format(data.dataPagamento, "dd/MM/yy") : "",
         dataEntrega: data.dataEntrega ? format(data.dataEntrega, "dd/MM/yy") : "",
+        valorParcela: valorParcela,
+        datasPagamento: datasPagamento.join(", "),
         formType: 'cliente',
       };
       
@@ -618,15 +658,36 @@ const CustomerForm = () => {
                 required
                 readOnly={true}
               />
-              {parcelamento && (
+              
+              {parcelamento && valorParcela && (
+                <div className="bg-delta-50 p-3 rounded-md border border-delta-100">
+                  <p className="font-medium text-delta-800">Detalhes do parcelamento:</p>
+                  <p className="text-delta-700">
+                    {`${parcelamento} de ${valorParcela}`}
+                  </p>
+                  
+                  {datasPagamento.length > 0 && (
+                    <div className="mt-2">
+                      <p className="font-medium text-delta-800">Datas de pagamento:</p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-1">
+                        {datasPagamento.map((data, index) => (
+                          <div key={index} className="bg-white p-1 rounded border border-delta-100 text-center text-sm">
+                            <span className="font-medium">{index + 1}ª</span>: {data}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {parcelamento && parcelamento.includes("com juros") && (
                 <div className="text-sm text-delta-600">
-                  {parcelamento.includes("com juros") 
-                    ? jurosAplicado === "Personalizado"
-                      ? `Valor será parcelado em ${parcelamento} (${jurosPersonalizado} de juros)`
-                      : jurosAplicado
-                        ? `Valor será parcelado em ${parcelamento} (${jurosAplicado} de juros)`
-                        : `Valor será parcelado em ${parcelamento} (3% de juros por parcela acima de 3x)`
-                    : `Valor será parcelado em ${parcelamento}`}
+                  {jurosAplicado === "Personalizado"
+                    ? `Valor parcelado em ${parcelamento} (${jurosPersonalizado} de juros aplicados)`
+                    : jurosAplicado
+                      ? `Valor parcelado em ${parcelamento} (${jurosAplicado} de juros aplicados)`
+                      : `Valor parcelado em ${parcelamento} (3% de juros por parcela acima de 3x)`}
                 </div>
               )}
             </div>

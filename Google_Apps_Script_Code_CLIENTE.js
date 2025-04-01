@@ -44,7 +44,7 @@ function doPost(e) {
           "nome", "cpf", "telefone", "genero", "linha", "tipo", 
           "cor", "tamanho", "valor", "formaPagamento", "parcelamento", 
           "jurosAplicado", "cupom", "localizacao", "frete", "dataPagamento", 
-          "dataEntrega", "valorTotal", "observacao", "dataRegistro"
+          "dataEntrega", "valorTotal", "valorParcela", "datasPagamento", "observacao", "dataRegistro"
         ]);
       }
     } catch (err) {
@@ -82,6 +82,8 @@ function doPost(e) {
       data.dataPagamento || "",
       data.dataEntrega || "",
       data.valorTotal || "",
+      data.valorParcela || "",
+      data.datasPagamento || "",
       data.observacao || "",
       formattedTimestamp
     ];
