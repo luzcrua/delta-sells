@@ -14,8 +14,8 @@ export const formSchema = z.object({
   valor: z.string().min(1, "Valor é obrigatório"),
   formaPagamento: z.enum(["PIX", "Débito", "Crédito", "Dinheiro"]),
   parcelamento: z.string().default("Sem parcelamento"),
-  jurosAplicado: z.string().optional(),
-  cupom: z.string().optional(),
+  cupomDesconto: z.enum(["Sem desconto", "5% OFF", "10% OFF", "15% OFF", "Outro"]).default("Sem desconto"),
+  nomeCupom: z.string().optional(),
   localizacao: z.string().optional(),
   frete: z.string().min(1, "Frete é obrigatório"),
   dataPagamento: z.date({

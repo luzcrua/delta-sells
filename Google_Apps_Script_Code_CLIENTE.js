@@ -43,7 +43,7 @@ function doPost(e) {
         sheet.appendRow([
           "nome", "cpf", "telefone", "genero", "linha", "tipo", 
           "cor", "tamanho", "valor", "formaPagamento", "parcelamento", 
-          "jurosAplicado", "cupom", "localizacao", "frete", "dataPagamento", 
+          "cupom", "nomeCupom", "localizacao", "frete", "dataPagamento", 
           "dataEntrega", "valorTotal", "valorParcela", "datasPagamento", "observacao", "dataRegistro"
         ]);
       }
@@ -75,8 +75,8 @@ function doPost(e) {
       data.valor || "",
       data.formaPagamento || "",
       data.parcelamento || "Sem parcelamento",
-      data.jurosAplicado || "",
-      data.cupom || "",
+      data.cupom || "Sem desconto",
+      data.nomeCupom || "",
       data.localizacao || "",
       data.frete || "",
       data.dataPagamento || "",

@@ -29,7 +29,6 @@ const CustomerForm = () => {
   const [valorNumerico, setValorNumerico] = useState(0);
   const [freteNumerico, setFreteNumerico] = useState(15);
   const [customCupom, setCustomCupom] = useState("");
-  const [jurosPersonalizado, setJurosPersonalizado] = useState("");
   const [isConfigured, setIsConfigured] = useState(false);
   const [showSheetLink, setShowSheetLink] = useState(false);
   const [valorParcela, setValorParcela] = useState("");
@@ -62,8 +61,8 @@ const CustomerForm = () => {
       valor: "",
       formaPagamento: "PIX",
       parcelamento: "Sem parcelamento",
-      jurosAplicado: "",
-      cupom: "",
+      cupomDesconto: "Sem desconto",
+      nomeCupom: "",
       localizacao: "",
       frete: "15,00",
       dataPagamento: undefined,
@@ -74,14 +73,14 @@ const CustomerForm = () => {
   });
 
   const formaPagamento = watch("formaPagamento");
-  const cupom = watch("cupom");
+  const cupomDesconto = watch("cupomDesconto");
+  const nomeCupom = watch("nomeCupom");
   const valor = watch("valor");
   const frete = watch("frete");
   const parcelamento = watch("parcelamento");
-  const jurosAplicado = watch("jurosAplicado");
   const dataPagamento = watch("dataPagamento");
   
-  // Calcula o valor total considerando descontos, frete e parcelamento
+  // Calcula o valor total considerando descontos e frete
   useEffect(() => {
     try {
       // Limpa e converte o valor e frete para números
@@ -98,17 +97,12 @@ const CustomerForm = () => {
       // Calcula o desconto baseado no cupom selecionado
       let descontoPercentual = 0;
       
-      if (cupom === "5% OFF") {
+      if (cupomDesconto === "5% OFF") {
         descontoPercentual = 5;
-      } else if (cupom === "10% OFF") {
+      } else if (cupomDesconto === "10% OFF") {
         descontoPercentual = 10;
-      } else if (cupom === "15% OFF") {
+      } else if (cupomDesconto === "15% OFF") {
         descontoPercentual = 15;
-      } else if (cupom === "Personalizado" && customCupom) {
-        const percentMatch = customCupom.match(/(\d+)/);
-        if (percentMatch) {
-          descontoPercentual = parseInt(percentMatch[0]);
-        }
       }
       
       // Calcula o valor com desconto
@@ -118,32 +112,15 @@ const CustomerForm = () => {
       // Adiciona o frete ao valor com desconto
       const valorComDescontoEFrete = valorComDesconto + parsedFrete;
       
-      // Inicializa o valor final (inclui possíveis juros em caso de parcelamento)
+      // Valor final (sem juros pois todos são sem juros)
       let valorFinal = valorComDescontoEFrete;
       let valorParcelaCalculado = valorFinal;
       let numParcelas = 1;
       let datasParcelas: string[] = [];
       
-      // Aplica juros se houver parcelamento
+      // Calcula parcelamento (todos sem juros)
       if (parcelamento && parcelamento !== "Sem parcelamento") {
         numParcelas = parseInt(parcelamento.split("x")[0]);
-        
-        // Verifica se tem juros personalizado
-        if (jurosAplicado === "Personalizado" && jurosPersonalizado) {
-          const taxaMatch = jurosPersonalizado.match(/(\d+)/);
-          if (taxaMatch) {
-            const taxaJuros = parseInt(taxaMatch[0]) / 100;
-            valorFinal = valorComDescontoEFrete * (1 + taxaJuros);
-          }
-        } 
-        // Aplica juros padrão para parcelamento com juros
-        else if (parcelamento.includes("com juros")) {
-          // Juros de 3% por parcela acima de 3x
-          if (numParcelas > 3) {
-            const taxaJuros = 0.03 * (numParcelas - 3);
-            valorFinal = valorComDescontoEFrete * (1 + taxaJuros);
-          }
-        }
         
         // Calcula o valor da parcela
         valorParcelaCalculado = valorFinal / numParcelas;
@@ -184,8 +161,6 @@ const CustomerForm = () => {
         formaPagamento,
         parcelamento,
         numParcelas,
-        jurosAplicado,
-        jurosPersonalizado,
         valorParcelaCalculado,
         valorFinal,
         totalArredondado,
@@ -196,7 +171,7 @@ const CustomerForm = () => {
       LogService.error("Erro ao calcular valor total", error);
       setValue("valorTotal", formatCurrency(String(parseFloat(frete.replace(/[^\d,]/g, "").replace(",", ".")) * 100 || 1500)));
     }
-  }, [valor, frete, cupom, customCupom, formaPagamento, parcelamento, jurosAplicado, jurosPersonalizado, dataPagamento, setValue]);
+  }, [valor, frete, cupomDesconto, formaPagamento, parcelamento, dataPagamento, setValue]);
 
   const handleInputChange = (field: keyof FormValues) => (e: ChangeEvent<HTMLInputElement>) => {
     setValue(field, e.target.value);
@@ -205,33 +180,15 @@ const CustomerForm = () => {
   const handleSelectChange = (field: keyof FormValues) => (value: string) => {
     setValue(field, value);
     
-    if (field === "cupom" && value !== "Personalizado") {
+    if (field === "cupomDesconto" && value !== "Outro") {
       setCustomCupom("");
-    }
-    
-    if (field === "jurosAplicado" && value !== "Personalizado") {
-      setJurosPersonalizado("");
+      setValue("nomeCupom", "");
     }
   };
 
   const handleCustomCupomChange = (e: ChangeEvent<HTMLInputElement>) => {
     setCustomCupom(e.target.value);
-    
-    if (e.target.value) {
-      setValue("cupom", "Personalizado");
-    } else {
-      setValue("cupom", "");
-    }
-  };
-  
-  const handleJurosPersonalizadoChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setJurosPersonalizado(e.target.value);
-    
-    if (e.target.value) {
-      setValue("jurosAplicado", "Personalizado");
-    } else {
-      setValue("jurosAplicado", "");
-    }
+    setValue("nomeCupom", e.target.value);
   };
 
   const handleTextareaChange = (field: keyof FormValues) => (e: ChangeEvent<HTMLTextAreaElement>) => {
@@ -266,8 +223,7 @@ const CustomerForm = () => {
     try {
       const formattedData = {
         ...data,
-        cupom: data.cupom === "Personalizado" ? customCupom : data.cupom,
-        jurosAplicado: data.jurosAplicado === "Personalizado" ? jurosPersonalizado : data.jurosAplicado,
+        cupom: data.cupomDesconto === "Outro" ? data.nomeCupom : data.cupomDesconto,
         dataPagamento: data.dataPagamento ? format(data.dataPagamento, "dd/MM/yy") : "",
         dataEntrega: data.dataEntrega ? format(data.dataEntrega, "dd/MM/yy") : "",
         valorParcela: valorParcela,
@@ -521,51 +477,13 @@ const CustomerForm = () => {
                   { value: "Sem parcelamento", label: "Sem parcelamento" },
                   { value: "2x sem juros", label: "2x sem juros" },
                   { value: "3x sem juros", label: "3x sem juros" },
-                  { value: "4x com juros", label: "4x com juros" },
-                  { value: "5x com juros", label: "5x com juros" },
-                  { value: "6x com juros", label: "6x com juros" },
-                  { value: "7x com juros", label: "7x com juros" },
-                  { value: "8x com juros", label: "8x com juros" },
-                  { value: "9x com juros", label: "9x com juros" },
-                  { value: "10x com juros", label: "10x com juros" },
-                  { value: "11x com juros", label: "11x com juros" },
-                  { value: "12x com juros", label: "12x com juros" },
+                  { value: "4x sem juros", label: "4x sem juros" },
+                  { value: "5x sem juros", label: "5x sem juros" },
+                  { value: "6x sem juros", label: "6x sem juros" },
                 ]}
                 error={errors.parcelamento?.message}
               />
             </div>
-            
-            {parcelamento && parcelamento !== "Sem parcelamento" && parcelamento.includes("com juros") && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormSelect
-                  id="jurosAplicado"
-                  label="Juros Aplicado"
-                  value={watch("jurosAplicado") || ""}
-                  onChange={handleSelectChange("jurosAplicado")}
-                  options={[
-                    { value: "", label: "Padrão (3% por parcela acima de 3x)" },
-                    { value: "5%", label: "5% de juros" },
-                    { value: "10%", label: "10% de juros" },
-                    { value: "15%", label: "15% de juros" },
-                    { value: "Personalizado", label: "Juros personalizado" },
-                  ]}
-                  error={errors.jurosAplicado?.message}
-                />
-                
-                {jurosAplicado === "Personalizado" && (
-                  <div className="mt-2">
-                    <FormInput
-                      id="juros-personalizado"
-                      label=""
-                      value={jurosPersonalizado}
-                      onChange={handleJurosPersonalizadoChange}
-                      placeholder="Ex: 7%"
-                      error=""
-                    />
-                  </div>
-                )}
-              </div>
-            )}
             
             <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
               <FormInput
@@ -581,28 +499,28 @@ const CustomerForm = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <FormSelect
-                  id="cupom"
-                  label="Cupom de Desconto"
-                  value={watch("cupom") || ""}
-                  onChange={handleSelectChange("cupom")}
+                  id="cupomDesconto"
+                  label="Desconto Aplicado"
+                  value={watch("cupomDesconto") || "Sem desconto"}
+                  onChange={handleSelectChange("cupomDesconto")}
                   options={[
-                    { value: "", label: "Nenhum" },
+                    { value: "Sem desconto", label: "Sem desconto" },
                     { value: "5% OFF", label: "5% de desconto" },
                     { value: "10% OFF", label: "10% de desconto" },
                     { value: "15% OFF", label: "15% de desconto" },
-                    { value: "Personalizado", label: "Desconto personalizado" },
+                    { value: "Outro", label: "Outro desconto" },
                   ]}
-                  error={errors.cupom?.message}
+                  error={errors.cupomDesconto?.message}
                 />
                 
-                {cupom === "Personalizado" && (
+                {cupomDesconto === "Outro" && (
                   <div className="mt-2">
                     <FormInput
                       id="custom-cupom"
-                      label=""
+                      label="Nome do Cupom"
                       value={customCupom}
                       onChange={handleCustomCupomChange}
-                      placeholder="Ex: 20% OFF"
+                      placeholder="Ex: BLACK FRIDAY"
                       error=""
                     />
                   </div>
@@ -680,13 +598,11 @@ const CustomerForm = () => {
                 </div>
               )}
               
-              {parcelamento && parcelamento !== "Sem parcelamento" && parcelamento.includes("com juros") && (
+              {cupomDesconto && cupomDesconto !== "Sem desconto" && (
                 <div className="text-sm text-delta-600">
-                  {jurosAplicado === "Personalizado"
-                    ? `Valor parcelado em ${parcelamento} (${jurosPersonalizado} de juros aplicados)`
-                    : jurosAplicado
-                      ? `Valor parcelado em ${parcelamento} (${jurosAplicado} de juros aplicados)`
-                      : `Valor parcelado em ${parcelamento} (3% de juros por parcela acima de 3x)`}
+                  {cupomDesconto === "Outro" 
+                    ? `Desconto aplicado: ${customCupom || "Personalizado"}`
+                    : `Desconto aplicado: ${cupomDesconto}`}
                 </div>
               )}
             </div>
