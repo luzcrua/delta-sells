@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,7 +29,6 @@ const CustomerForm = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [valorNumerico, setValorNumerico] = useState(0);
   const [freteNumerico, setFreteNumerico] = useState(15);
-  const [customCupom, setCustomCupom] = useState("");
   const [isConfigured, setIsConfigured] = useState(false);
   const [showSheetLink, setShowSheetLink] = useState(false);
   const [valorParcela, setValorParcela] = useState("");
@@ -179,16 +179,6 @@ const CustomerForm = () => {
 
   const handleSelectChange = (field: keyof FormValues) => (value: string) => {
     setValue(field, value);
-    
-    if (field === "cupomDesconto" && value !== "Outro") {
-      setCustomCupom("");
-      setValue("nomeCupom", "");
-    }
-  };
-
-  const handleCustomCupomChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setCustomCupom(e.target.value);
-    setValue("nomeCupom", e.target.value);
   };
 
   const handleTextareaChange = (field: keyof FormValues) => (e: ChangeEvent<HTMLTextAreaElement>) => {
@@ -223,7 +213,7 @@ const CustomerForm = () => {
     try {
       const formattedData = {
         ...data,
-        cupom: data.cupomDesconto === "Outro" ? data.nomeCupom : data.cupomDesconto,
+        cupom: data.cupomDesconto,
         dataPagamento: data.dataPagamento ? format(data.dataPagamento, "dd/MM/yy") : "",
         dataEntrega: data.dataEntrega ? format(data.dataEntrega, "dd/MM/yy") : "",
         valorParcela: valorParcela,
@@ -508,25 +498,22 @@ const CustomerForm = () => {
                     { value: "5% OFF", label: "5% de desconto" },
                     { value: "10% OFF", label: "10% de desconto" },
                     { value: "15% OFF", label: "15% de desconto" },
-                    { value: "Outro", label: "Outro desconto" },
                   ]}
                   error={errors.cupomDesconto?.message}
                 />
-                
-                {cupomDesconto === "Outro" && (
-                  <div className="mt-2">
-                    <FormInput
-                      id="custom-cupom"
-                      label="Nome do Cupom"
-                      value={customCupom}
-                      onChange={handleCustomCupomChange}
-                      placeholder="Ex: BLACK FRIDAY"
-                      error=""
-                    />
-                  </div>
-                )}
               </div>
               
+              <FormInput
+                id="nomeCupom"
+                label="Nome do Cupom (opcional)"
+                value={watch("nomeCupom") || ""}
+                onChange={handleInputChange("nomeCupom")}
+                placeholder="Ex: BLACK FRIDAY"
+                error={errors.nomeCupom?.message}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
               <FormCombobox
                 id="frete"
                 label="Frete"
@@ -600,9 +587,8 @@ const CustomerForm = () => {
               
               {cupomDesconto && cupomDesconto !== "Sem desconto" && (
                 <div className="text-sm text-delta-600">
-                  {cupomDesconto === "Outro" 
-                    ? `Desconto aplicado: ${customCupom || "Personalizado"}`
-                    : `Desconto aplicado: ${cupomDesconto}`}
+                  {`Desconto aplicado: ${cupomDesconto}`}
+                  {nomeCupom && ` (${nomeCupom})`}
                 </div>
               )}
             </div>
