@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -62,7 +61,7 @@ const CustomerForm = () => {
       tamanho: "",
       valor: "",
       formaPagamento: "PIX",
-      parcelamento: "",
+      parcelamento: "Sem parcelamento",
       jurosAplicado: "",
       cupom: "",
       localizacao: "",
@@ -126,7 +125,7 @@ const CustomerForm = () => {
       let datasParcelas: string[] = [];
       
       // Aplica juros se houver parcelamento
-      if (parcelamento) {
+      if (parcelamento && parcelamento !== "Sem parcelamento") {
         numParcelas = parseInt(parcelamento.split("x")[0]);
         
         // Verifica se tem juros personalizado
@@ -516,10 +515,10 @@ const CustomerForm = () => {
               <FormSelect
                 id="parcelamento"
                 label="Parcelamento"
-                value={watch("parcelamento") || ""}
+                value={watch("parcelamento") || "Sem parcelamento"}
                 onChange={handleSelectChange("parcelamento")}
                 options={[
-                  { value: "", label: "À vista" },
+                  { value: "Sem parcelamento", label: "Sem parcelamento" },
                   { value: "2x sem juros", label: "2x sem juros" },
                   { value: "3x sem juros", label: "3x sem juros" },
                   { value: "4x com juros", label: "4x com juros" },
@@ -536,7 +535,7 @@ const CustomerForm = () => {
               />
             </div>
             
-            {parcelamento && parcelamento.includes("com juros") && (
+            {parcelamento && parcelamento !== "Sem parcelamento" && parcelamento.includes("com juros") && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormSelect
                   id="jurosAplicado"
@@ -659,7 +658,7 @@ const CustomerForm = () => {
                 readOnly={true}
               />
               
-              {parcelamento && valorParcela && (
+              {parcelamento && parcelamento !== "Sem parcelamento" && valorParcela && (
                 <div className="bg-delta-50 p-3 rounded-md border border-delta-100">
                   <p className="font-medium text-delta-800">Detalhes do parcelamento:</p>
                   <p className="text-delta-700">
@@ -681,7 +680,7 @@ const CustomerForm = () => {
                 </div>
               )}
               
-              {parcelamento && parcelamento.includes("com juros") && (
+              {parcelamento && parcelamento !== "Sem parcelamento" && parcelamento.includes("com juros") && (
                 <div className="text-sm text-delta-600">
                   {jurosAplicado === "Personalizado"
                     ? `Valor parcelado em ${parcelamento} (${jurosPersonalizado} de juros aplicados)`

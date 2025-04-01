@@ -74,7 +74,7 @@ function doPost(e) {
       data.tamanho || "",
       data.valor || "",
       data.formaPagamento || "",
-      data.parcelamento || "",
+      data.parcelamento || "Sem parcelamento",
       data.jurosAplicado || "",
       data.cupom || "",
       data.localizacao || "",
