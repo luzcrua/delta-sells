@@ -113,7 +113,7 @@ const Dashboard = () => {
         </div>
 
         <footer className="mt-8 text-center text-delta-700 text-sm">
-          <p>© 2023 DELTA SELLS. Todos os direitos reservados.</p>
+          <p>© 2025 DELTA SELLS. Todos os direitos reservados. Idealizado por Arinelson Santos</p>
         </footer>
       </div>
     </div>
