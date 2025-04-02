@@ -13,6 +13,9 @@ export const GOOGLE_SHEET_VIEW_URL = {
   LEAD: "https://docs.google.com/spreadsheets/d/1NA-iPBQkAZ-ZG7IST9tUkTCZPHQkuHT1aazRdmcXu14/edit?gid=0#gid=0"
 };
 
+// Senha para acesso ao sistema
+export const ACCESS_PASSWORD = "12345";
+
 // Configuração de log
 export const LOG_ENABLED: boolean = true;
 export const LOG_LEVEL: 'debug' | 'info' | 'warn' | 'error' = 'debug';
