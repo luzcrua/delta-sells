@@ -42,12 +42,12 @@ function doPost(e) {
         // Criar nova aba se não existir
         sheet = ss.insertSheet("Cliente");
         
-        // Configurar cabeçalhos
+        // Configurar cabeçalhos na ordem especificada
         sheet.appendRow([
-          "nome", "cpf", "telefone", "genero", "linha", "tipo", 
-          "cor", "tamanho", "valor", "formaPagamento", "parcelamento", 
-          "cupom", "nomeCupom", "localizacao", "frete", "dataPagamento", 
-          "dataEntrega", "valorTotal", "valorParcela", "datasPagamento", "observacao", "dataRegistro"
+          "DIA/HORA", "NOME", "CPF", "TELEFONE", "GÊNERO", "LINHA", "PEÇA", 
+          "COR", "TAMANHO", "VALOR", "FORMA DE PAGAMENTO", "PARCELADO?",
+          "LOCALIZACAO", "DESCONTO?", "NOME DO CUPOM", "FRETE", "DATA DE PAGAMENTO", 
+          "DATA DE ENTREGA", "VALOR TOTAL", "OBSERVACOES"
         ]);
       }
     } catch (err) {
@@ -65,30 +65,28 @@ function doPost(e) {
       "dd/MM/yyyy HH:mm:ss"
     );
     
-    // Preparar a linha de dados para inserção
+    // Preparar a linha de dados para inserção na ordem correta
     const rowData = [
-      data.nome || "",
-      data.cpf || "",
-      data.telefone || "",
-      data.genero || "",
-      data.linha || "",
-      data.tipo || "",
-      data.cor || "",
-      data.tamanho || "",
-      data.valor || "",
-      data.formaPagamento || "",
-      data.parcelamento || "Sem parcelamento",
-      data.cupom || "Sem desconto",
-      data.nomeCupom || "",
-      data.localizacao || "",
-      data.frete || "",
-      data.dataPagamento || "",
-      data.dataEntrega || "",
-      data.valorTotal || "",
-      data.valorParcela || "",
-      data.datasPagamento || "",
-      data.observacao || "",
-      formattedTimestamp
+      formattedTimestamp,                // DIA/HORA
+      data.nome || "",                   // NOME
+      data.cpf || "",                    // CPF
+      data.telefone || "",               // TELEFONE
+      data.genero || "",                 // GÊNERO
+      data.linha || "",                  // LINHA
+      data.tipo || "",                   // PEÇA (tipo)
+      data.cor || "",                    // COR
+      data.tamanho || "",                // TAMANHO
+      data.valor || "",                  // VALOR
+      data.formaPagamento || "",         // FORMA DE PAGAMENTO
+      data.parcelamento || "Não",        // PARCELADO?
+      data.localizacao || "",            // LOCALIZACAO
+      data.cupom || "Não",               // DESCONTO?
+      data.nomeCupom || "",              // NOME DO CUPOM
+      data.frete || "",                  // FRETE
+      data.dataPagamento || "",          // DATA DE PAGAMENTO
+      data.dataEntrega || "",            // DATA DE ENTREGA
+      data.valorTotal || "",             // VALOR TOTAL
+      data.observacao || ""              // OBSERVACOES
     ];
     
     // Encontrar a próxima linha vazia na planilha
