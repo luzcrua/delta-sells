@@ -439,9 +439,9 @@ const CustomerForm = () => {
                 label="Valor"
                 value={watch("valor")}
                 onChange={handleInputChange("valor")}
-                placeholder="0,00"
+                placeholder="R$ 0,00"
                 error={errors.valor?.message}
-                formatter={formatCurrency}
+               // formatter={formatCurrency}
                 required
               />
             </div>
@@ -567,7 +567,7 @@ const CustomerForm = () => {
                 label="Valor Total"
                 value={watch("valorTotal")}
                 onChange={handleInputChange("valorTotal")}
-                placeholder="0,00"
+                placeholder="R$ 0,00"
                 error={errors.valorTotal?.message}
                 className="font-semibold text-lg"
                 required
