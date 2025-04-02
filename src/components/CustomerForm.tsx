@@ -441,7 +441,10 @@ const CustomerForm = () => {
                 onChange={handleInputChange("valor")}
                 placeholder="R$ 0,00"
                 error={errors.valor?.message}
-               // formatter={formatCurrency}
+                formatter={(value) => {
+                // Usa a função formatCurrency existente, mas remove o cifrão
+                return formatCurrency(value).replace('R$', '').trim();
+                  }}
                 required
               />
             </div>
