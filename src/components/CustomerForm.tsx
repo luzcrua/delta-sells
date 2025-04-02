@@ -384,7 +384,14 @@ const CustomerForm = () => {
                 onChange={handleSelectChange("tipo")}
                 onCustomInputChange={handleInputChange("tipo")}
                 options={[
-                  { value: "Camisa", label: "Camisa" },
+                  { value: "Camisa Normal", label: "Camisa Normal" },
+                  { value: "Camisa de Compressão", label: "Camisa de Compressão" },
+                  { value: "Short", label: "Short" },
+                  { value: "Legging", label: "Legging" },
+                  { value: "Regata", label: "Regata" },
+                  { value: "Top", label: "Top" },
+                  { value: "Blusa Normal", label: "Blusa Normal" },
+                  { value: "Blusa de Compressão", label: "Regata" },
                 ]}
                 error={errors.tipo?.message}
                 required
@@ -399,9 +406,11 @@ const CustomerForm = () => {
                 onCustomInputChange={handleInputChange("cor")}
                 options={[
                   { value: "OFF WHITE", label: "OFF WHITE" },
-                  { value: "Preto", label: "Preto" },
-                  { value: "Branco", label: "Branco" },
-                  { value: "Cinza", label: "Cinza" },
+                  { value: "PRETO(A)", label: "PRETO(A)" },
+                  { value: "BRANCO(A)", label: "BRANCO(A)" },
+                  { value: "AZUL", label: "AZUL" },
+                  { value: "AZUL MARINHO", label: "AZUL MARINHO" },
+                  { value: "CINZA", label: "CINZA" },
                 ]}
                 error={errors.cor?.message}
                 required
@@ -430,7 +439,7 @@ const CustomerForm = () => {
                 label="Valor"
                 value={watch("valor")}
                 onChange={handleInputChange("valor")}
-                placeholder="R$ 0,00"
+                placeholder="0,00"
                 error={errors.valor?.message}
                 formatter={formatCurrency}
                 required
@@ -558,7 +567,7 @@ const CustomerForm = () => {
                 label="Valor Total"
                 value={watch("valorTotal")}
                 onChange={handleInputChange("valorTotal")}
-                placeholder="R$ 0,00"
+                placeholder="0,00"
                 error={errors.valorTotal?.message}
                 className="font-semibold text-lg"
                 required
