@@ -573,6 +573,10 @@ const CustomerForm = () => {
                 placeholder="R$ 0,00"
                 error={errors.valorTotal?.message}
                 className="font-semibold text-lg"
+                formatter={(value) => {
+                // Usa a função formatCurrency existente, mas remove o cifrão
+                return formatCurrency(value).replace('R$', '').trim();
+                  }}
                 required
                 readOnly={true}
               />
