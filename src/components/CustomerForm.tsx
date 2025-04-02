@@ -371,6 +371,8 @@ const CustomerForm = () => {
                 options={[
                   { value: "Oversized", label: "Oversized" },
                   { value: "Run Muscle", label: "Run Muscle" },
+                  { value: "Delta Basic", label: "Delta Basic" },
+                  { value: "Feminine", label: "Feminine" },
                 ]}
                 error={errors.linha?.message}
                 required
