@@ -91,14 +91,19 @@ function doPost(e) {
       formattedTimestamp
     ];
     
-    // Adicionar os dados à planilha
-    sheet.appendRow(rowData);
+    // Encontrar a próxima linha vazia na planilha
+    const lastRow = sheet.getLastRow();
+    const startRow = lastRow + 1;
+    
+    // Adicionar os dados à planilha em uma única linha
+    sheet.getRange(startRow, 1, 1, rowData.length).setValues([rowData]);
     
     // Retornar uma resposta de sucesso
     return ContentService.createTextOutput(JSON.stringify({
       success: true,
       message: "Dados do cliente salvos com sucesso na planilha!",
-      sheetName: "Cliente"
+      sheetName: "Cliente",
+      row: startRow
     })).setMimeType(ContentService.MimeType.JSON);
     
   } catch (error) {

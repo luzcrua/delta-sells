@@ -16,10 +16,14 @@ class LogServiceClass {
   private logs: LogEntry[] = [];
   private corsErrors: number = 0;
   private networkErrors: number = 0;
+  private duplicateRequests: number = 0;
   private originalConsoleError: typeof console.error;
+  private originalConsoleWarn: typeof console.warn;
+  private lastRequestTimestamps: Record<string, number> = {};
 
   constructor() {
     this.originalConsoleError = console.error;
+    this.originalConsoleWarn = console.warn;
     this.setupErrorMonitoring();
   }
 
@@ -65,6 +69,35 @@ class LogServiceClass {
     }
   }
 
+  /**
+   * Detecta possíveis envios duplicados de formulários
+   * @param formType tipo de formulário (cliente/lead)
+   * @param data dados do formulário
+   * @returns true se é uma duplicação recente
+   */
+  public detectDuplicateSubmission(formType: string, data: any): boolean {
+    // Criar uma chave única baseada no tipo de formulário e alguns dados
+    const uniqueKey = `${formType}-${data.nome}-${data.telefone}`;
+    const now = Date.now();
+    
+    // Verificar se tivemos um envio recente do mesmo formulário (dentro de 3 segundos)
+    if (this.lastRequestTimestamps[uniqueKey] && 
+        now - this.lastRequestTimestamps[uniqueKey] < 3000) {
+      this.duplicateRequests++;
+      this.warn('Possível envio duplicado detectado', {
+        formType,
+        key: uniqueKey,
+        count: this.duplicateRequests,
+        timeSinceLastRequest: now - this.lastRequestTimestamps[uniqueKey]
+      });
+      return true;
+    }
+    
+    // Registrar este envio
+    this.lastRequestTimestamps[uniqueKey] = now;
+    return false;
+  }
+
   private setupErrorMonitoring(): void {
     if (typeof window !== 'undefined') {
       const self = this;
@@ -92,6 +125,22 @@ class LogServiceClass {
           self.error('Network Error in console', {
             message: errorString,
             count: self.networkErrors
+          });
+        }
+      };
+      
+      // Sobrescrever console.warn para capturar avisos relevantes
+      console.warn = function(...args) {
+        // Chamar o console.warn original
+        self.originalConsoleWarn.apply(console, args);
+        
+        // Analizar mensagens de aviso
+        const warnString = args.join(' ');
+        if (warnString.includes('duplicate') || 
+            warnString.includes('repetido') ||
+            warnString.includes('múltiplas vezes')) {
+          self.warn('Alerta de duplicação', {
+            message: warnString
           });
         }
       };
@@ -197,6 +246,13 @@ class LogServiceClass {
    */
   public getNetworkErrorCount(): number {
     return this.networkErrors;
+  }
+  
+  /**
+   * Retorna a contagem de possíveis duplicações detectadas
+   */
+  public getDuplicateRequestCount(): number {
+    return this.duplicateRequests;
   }
 }
 

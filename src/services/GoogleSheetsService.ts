@@ -1,4 +1,3 @@
-
 // This file provides helpers for Google Sheets integration
 import { 
   GOOGLE_SHEETS_URL, 
@@ -162,6 +161,14 @@ export const submitToGoogleSheets = async (formData: any): Promise<{success: boo
   const type = formData.formType;
   const url = type === 'cliente' ? GOOGLE_SHEETS_URL.CLIENTE : GOOGLE_SHEETS_URL.LEAD;
   
+  if (LogService.detectDuplicateSubmission(type, formData)) {
+    LogService.warn(`Possível envio duplicado detectado para ${type}`, { nome: formData.nome });
+    return { 
+      success: true, 
+      message: `Dados já enviados recentemente. Verificando planilha...` 
+    };
+  }
+  
   if (!url) {
     return { success: false, message: `URL para ${type} não configurada` };
   }
@@ -206,6 +213,7 @@ export const submitToGoogleSheets = async (formData: any): Promise<{success: boo
 
 /**
  * Submit via iframe oculto (contorna CORS)
+ * Atualizado para evitar duplicações
  */
 const submitViaHiddenIframe = (url: string, formData: any): Promise<{success: boolean; message: string}> => {
   return new Promise((resolve, reject) => {
@@ -216,19 +224,21 @@ const submitViaHiddenIframe = (url: string, formData: any): Promise<{success: bo
         oldIframe.remove();
       }
       
-      // Criar novo iframe
+      // Criar novo iframe com ID único para evitar cache
+      const uniqueId = `sheetSubmitFrame_${Date.now()}`;
       const iframe = document.createElement('iframe');
-      iframe.id = 'sheetSubmitFrame';
-      iframe.name = 'sheetSubmitFrame';
+      iframe.id = uniqueId;
+      iframe.name = uniqueId;
       iframe.style.display = 'none';
       document.body.appendChild(iframe);
       
-      // Criar formulário 
+      // Criar formulário com ID único
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = url;
-      form.target = 'sheetSubmitFrame';
+      form.target = uniqueId;
       form.style.display = 'none';
+      form.id = `form_${uniqueId}`;
       
       // Adicionar dados ao formulário
       const input = document.createElement('input');
@@ -237,28 +247,44 @@ const submitViaHiddenIframe = (url: string, formData: any): Promise<{success: bo
       input.value = JSON.stringify(formData);
       form.appendChild(input);
       
+      // Adicionar parâmetro para evitar cache
+      const cacheInput = document.createElement('input');
+      cacheInput.type = 'hidden';
+      cacheInput.name = 'nocache';
+      cacheInput.value = Date.now().toString();
+      form.appendChild(cacheInput);
+      
       document.body.appendChild(form);
+      
+      // Flag para controlar se já resolvemos esta promise
+      let isResolved = false;
       
       // Monitorar resposta
       iframe.onload = () => {
         try {
-          // Tentativa de acessar o conteúdo do iframe (pode falhar devido à política de mesma origem)
+          if (isResolved) return;
+          
           LogService.info("Iframe carregado, tentando obter resposta");
           setTimeout(() => {
-            // Mesmo sem conseguir acessar o conteúdo, consideramos que a submissão foi bem-sucedida
-            // já que o iframe carregou
+            if (isResolved) return;
+            
+            isResolved = true;
             resolve({
               success: true,
               message: "Dados enviados para a planilha via iframe"
             });
             
-            // Limpeza
-            form.remove();
-            // Mantém o iframe para debug
+            // Limpeza após um intervalo
+            setTimeout(() => {
+              if (document.body.contains(form)) form.remove();
+              // Deixa o iframe para debug
+            }, 5000);
           }, 1000);
         } catch (err) {
+          if (isResolved) return;
+          
           LogService.warn("Não foi possível acessar o conteúdo do iframe (CORS)", err);
-          // Ainda consideramos sucesso, já que o iframe carregou
+          isResolved = true;
           resolve({
             success: true,
             message: "Dados enviados para a planilha via iframe (não foi possível verificar resposta)"
@@ -268,13 +294,15 @@ const submitViaHiddenIframe = (url: string, formData: any): Promise<{success: bo
       
       // Timeout para considerar erro
       setTimeout(() => {
+        if (isResolved) return;
         if (document.body.contains(form)) {
+          isResolved = true;
           reject(new Error("Timeout ao enviar dados via iframe"));
         }
       }, 10000);
       
       // Submeter formulário
-      LogService.info("Submetendo formulário via iframe");
+      LogService.info(`Submetendo formulário via iframe (ID: ${uniqueId})`);
       form.submit();
       
     } catch (error) {
@@ -291,13 +319,17 @@ const submitViaFetch = async (url: string, formData: any): Promise<{success: boo
   
   while (retries < MAX_RETRIES) {
     try {
-      const response = await fetch(url, {
+      // Adicionar parâmetro para evitar cache
+      const urlWithNoCache = `${url}?nocache=${Date.now()}`;
+      
+      const response = await fetch(urlWithNoCache, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
-          data: JSON.stringify(formData)
+          data: JSON.stringify(formData),
+          nocache: Date.now().toString(),
         }),
       });
       
@@ -327,7 +359,9 @@ const submitViaXHR = (url: string, formData: any): Promise<{success: boolean; me
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     
-    xhr.open('POST', url, true);
+    // Adicionar parâmetro para evitar cache
+    const urlWithNoCache = `${url}?nocache=${Date.now()}`;
+    xhr.open('POST', urlWithNoCache, true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     
     xhr.onload = function() {
@@ -348,7 +382,8 @@ const submitViaXHR = (url: string, formData: any): Promise<{success: boolean; me
     };
     
     const body = new URLSearchParams({
-      data: JSON.stringify(formData)
+      data: JSON.stringify(formData),
+      nocache: Date.now().toString()
     }).toString();
     
     xhr.send(body);
