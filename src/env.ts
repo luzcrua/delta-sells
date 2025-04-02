@@ -14,7 +14,7 @@ export const GOOGLE_SHEET_VIEW_URL = {
 };
 
 // Senha para acesso ao sistema
-export const ACCESS_PASSWORD = "12345";
+export const ACCESS_PASSWORD = "JHONALVES";
 
 // Configuração de log
 export const LOG_ENABLED: boolean = true;
