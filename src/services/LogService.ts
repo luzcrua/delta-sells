@@ -1,140 +1,204 @@
 
-// Serviço de log para monitorar o funcionamento da aplicação
-import { LOG_ENABLED, LOG_LEVEL, DEBUG_MODE } from "../env";
+/**
+ * Serviço de log com funcionalidades de diagnóstico e monitoramento de erros
+ */
+import { LOG_ENABLED, LOG_LEVEL, DEBUG_MODE } from '../env';
 
-export class LogService {
-  static debug(message: string, data?: any): void {
-    if (LOG_ENABLED && (LOG_LEVEL === 'debug' || DEBUG_MODE)) {
-      this.log(message, data, 'DEBUG', '#6495ED');
-    }
+type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+type LogEntry = {
+  timestamp: string;
+  level: LogLevel;
+  message: string;
+  data?: any;
+};
+
+class LogServiceClass {
+  private logs: LogEntry[] = [];
+  private corsErrors: number = 0;
+  private networkErrors: number = 0;
+  private originalConsoleError: typeof console.error;
+
+  constructor() {
+    this.originalConsoleError = console.error;
+    this.setupErrorMonitoring();
   }
 
-  static info(message: string, data?: any): void {
-    if (LOG_ENABLED && ['debug', 'info'].includes(LOG_LEVEL)) {
-      this.log(message, data, 'INFO', '#4CAF50');
-    }
-  }
-
-  static warn(message: string, data?: any): void {
-    if (LOG_ENABLED && ['debug', 'info', 'warn'].includes(LOG_LEVEL)) {
-      this.log(message, data, 'WARN', '#FF9800');
-    }
-  }
-
-  static error(message: string, data?: any): void {
-    if (LOG_ENABLED) {
-      this.log(message, data, 'ERROR', '#F44336');
-      console.error(`[${new Date().toISOString()}] [ERROR] ${message}`, data);
-    }
-  }
-
-  static log(message: string, data: any, level: string, color: string): void {
-    const timestamp = new Date().toISOString();
-    const formattedMessage = `[${timestamp}] [${level}] ${message}`;
-    
-    console.info(`%c${formattedMessage}`, `color: ${color}; font-weight: bold`);
-    
-    if (data !== undefined) {
-      if (typeof data === 'object' && data !== null) {
-        console.info(data);
-      } else {
-        console.info(`Data: ${data}`);
-      }
-    }
-  }
-
-  // Monitorar problemas específicos de CORS com o Google Sheets
-  static monitorCORSErrors(): void {
-    this.info("🔍 Monitoramento de CORS ativado");
-    
-    // Monitorar erros de rede que podem ser causados por CORS
-    const originalFetch = window.fetch;
-    window.fetch = function(...args) {
-      const request = args[0];
-      const url = typeof request === 'string' ? request : request.url;
+  /**
+   * Configura monitoramento de erros para detectar problemas de CORS
+   */
+  public monitorCORSErrors(): void {
+    if (typeof window !== 'undefined') {
+      const self = this;
       
-      // Verificar se é uma solicitação para o Google Apps Script
-      if (url && url.includes('script.google.com')) {
-        LogService.debug(`📤 Tentativa de fetch para Google Apps Script: ${url}`);
+      // Observar eventos de erro na janela
+      window.addEventListener('error', function(event) {
+        if (event.message && (
+          event.message.includes('CORS') || 
+          event.message.includes('cross-origin') ||
+          event.message.includes('Access-Control-Allow-Origin')
+        )) {
+          self.corsErrors++;
+          self.error('CORS Error Detected', {
+            message: event.message,
+            source: event.filename,
+            line: event.lineno,
+            column: event.colno,
+            count: self.corsErrors
+          });
+        } else if (event.message && (
+          event.message.includes('network') ||
+          event.message.includes('Network') ||
+          event.message.includes('connection')
+        )) {
+          self.networkErrors++;
+          self.error('Network Error Detected', {
+            message: event.message,
+            source: event.filename,
+            line: event.lineno,
+            column: event.colno,
+            count: self.networkErrors
+          });
+        }
+      });
+      
+      this.info('CORS Error Monitoring Activated');
+    }
+  }
+
+  private setupErrorMonitoring(): void {
+    if (typeof window !== 'undefined') {
+      const self = this;
+      
+      // Sobrescrever console.error para capturar erros de CORS
+      console.error = function(...args) {
+        // Chamar o console.error original
+        self.originalConsoleError.apply(console, args);
+        
+        // Verificar se é um erro de CORS
+        const errorString = args.join(' ');
+        if (errorString.includes('CORS') || 
+            errorString.includes('cross-origin') || 
+            errorString.includes('Access-Control-Allow-Origin')) {
+          self.corsErrors++;
+          self.error('CORS Error in console', {
+            message: errorString,
+            count: self.corsErrors
+          });
+        } else if (errorString.includes('network') ||
+                 errorString.includes('Network') ||
+                 errorString.includes('connection') ||
+                 errorString.includes('Failed to fetch')) {
+          self.networkErrors++;
+          self.error('Network Error in console', {
+            message: errorString,
+            count: self.networkErrors
+          });
+        }
+      };
+    }
+  }
+
+  /**
+   * Registra mensagem de log de nível debug
+   */
+  public debug(message: string, data?: any): void {
+    this.log('debug', message, data);
+  }
+
+  /**
+   * Registra mensagem de log de nível info
+   */
+  public info(message: string, data?: any): void {
+    this.log('info', message, data);
+  }
+
+  /**
+   * Registra mensagem de log de nível warn
+   */
+  public warn(message: string, data?: any): void {
+    this.log('warn', message, data);
+  }
+
+  /**
+   * Registra mensagem de log de nível error
+   */
+  public error(message: string, data?: any): void {
+    this.log('error', message, data);
+  }
+
+  /**
+   * Registra mensagem de log com o nível especificado
+   */
+  private log(level: LogLevel, message: string, data?: any): void {
+    if (!LOG_ENABLED) return;
+    
+    // Verificar o nível mínimo de log configurado
+    const levels: LogLevel[] = ['debug', 'info', 'warn', 'error'];
+    const configLevelIndex = levels.indexOf(LOG_LEVEL);
+    const currentLevelIndex = levels.indexOf(level);
+    
+    // Só logar se o nível atual for maior ou igual ao configurado
+    if (currentLevelIndex >= configLevelIndex) {
+      const entry: LogEntry = {
+        timestamp: new Date().toISOString(),
+        level,
+        message,
+        data,
+      };
+      
+      this.logs.push(entry);
+      
+      // Limitar o número de logs armazenados
+      if (this.logs.length > 1000) {
+        this.logs = this.logs.slice(-1000);
       }
       
-      return originalFetch.apply(this, args)
-        .catch(error => {
-          if (error.message && (
-              error.message.includes('CORS') || 
-              error.message.includes('Failed to fetch') || 
-              error.message.includes('Network error')
-            )) {
-            LogService.warn("⚠️ Possível problema de CORS detectado!", error);
-          }
-          throw error;
-        });
-    };
-    
-    // Capturar erros não tratados que podem ser causados por CORS
-    window.addEventListener('error', function(event) {
-      if (event.message && (
-        event.message.includes('CORS') || 
-        event.message.includes('Failed to fetch') || 
-        event.message.includes('Network error')
-      )) {
-        LogService.warn("⚠️ Erro de CORS detectado em evento global!", event);
+      // Logar no console se DEBUG_MODE estiver ativado
+      if (DEBUG_MODE) {
+        const styles = {
+          debug: 'color: #2196F3; font-weight: normal;',
+          info: 'color: #4CAF50; font-weight: normal;',
+          warn: 'color: #FF9800; font-weight: bold;',
+          error: 'color: #F44336; font-weight: bold;'
+        };
+        
+        console.log(
+          `%c[${level.toUpperCase()}] ${message}`,
+          styles[level],
+          data || ''
+        );
       }
-    });
-    
-    // Monitorar rejeições de promessas não tratadas
-    window.addEventListener('unhandledrejection', function(event) {
-      const reason = event.reason;
-      if (reason && reason.message && (
-        reason.message.includes('CORS') || 
-        reason.message.includes('Failed to fetch') || 
-        reason.message.includes('Network error')
-      )) {
-        LogService.warn("⚠️ Problema de CORS em promessa não tratada!", reason);
-      }
-    });
+    }
   }
-  
-  // Função para validar resposta da submissão ao Google Sheets
-  static validateGoogleSheetsResponse(response: any): boolean {
-    this.debug("🔍 Validando resposta do Google Sheets", response);
-    
-    if (!response) {
-      this.error("❌ Resposta nula do Google Sheets");
-      return false;
-    }
-    
-    if (typeof response === 'object') {
-      if (response.success === true) {
-        this.info("✅ Resposta válida com sucesso=true");
-        return true;
-      } else {
-        this.warn("⚠️ Resposta com sucesso=false", response);
-        return false;
-      }
-    } else if (typeof response === 'string') {
-      try {
-        const parsed = JSON.parse(response);
-        if (parsed.success === true) {
-          this.info("✅ String JSON parseada com sucesso=true");
-          return true;
-        } else {
-          this.warn("⚠️ String JSON parseada com sucesso=false", parsed);
-          return false;
-        }
-      } catch (e) {
-        // Não é JSON, verificar se contém palavras-chave
-        if (response.includes('success') || response.includes('sucesso')) {
-          this.info("✅ String contém indicação de sucesso");
-          return true;
-        } else {
-          this.warn("⚠️ String não contém indicação de sucesso", response);
-          return false;
-        }
-      }
-    }
-    
-    this.error("❌ Formato de resposta desconhecido", response);
-    return false;
+
+  /**
+   * Obtém todos os logs registrados
+   */
+  public getLogs(): LogEntry[] {
+    return this.logs;
+  }
+
+  /**
+   * Limpa todos os logs
+   */
+  public clearLogs(): void {
+    this.logs = [];
+  }
+
+  /**
+   * Retorna a contagem de erros de CORS detectados
+   */
+  public getCorsErrorCount(): number {
+    return this.corsErrors;
+  }
+
+  /**
+   * Retorna a contagem de erros de rede detectados
+   */
+  public getNetworkErrorCount(): number {
+    return this.networkErrors;
   }
 }
+
+// Exporta uma instância única do serviço
+export const LogService = new LogServiceClass();

@@ -12,6 +12,7 @@ import {
   diagnoseAppsScriptSetup
 } from '@/services/GoogleSheetsService';
 import { GOOGLE_SHEETS_URL, GOOGLE_SHEET_VIEW_URL } from '@/env';
+import AdvancedCORSTest from './AdvancedCORSTest';
 
 const DiagnosticsPanel = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -23,6 +24,8 @@ const DiagnosticsPanel = () => {
     leadPost: boolean | null;
     issues: string[];
     runDate: string;
+    corsErrorCount: number;
+    networkErrorCount: number;
   }>({
     configured: false,
     clienteConnection: null,
@@ -31,6 +34,8 @@ const DiagnosticsPanel = () => {
     leadPost: null,
     issues: [],
     runDate: '',
+    corsErrorCount: 0,
+    networkErrorCount: 0
   });
 
   const runDiagnostics = async () => {
@@ -38,12 +43,16 @@ const DiagnosticsPanel = () => {
     
     const configured = isWebhookConfigured();
     const issues = diagnoseAppsScriptSetup();
+    const corsErrorCount = LogService.getCorsErrorCount();
+    const networkErrorCount = LogService.getNetworkErrorCount();
     
     setResults({
       ...results,
       configured,
       issues,
       runDate: new Date().toLocaleString(),
+      corsErrorCount,
+      networkErrorCount
     });
     
     // Testar conexões
@@ -94,16 +103,25 @@ const DiagnosticsPanel = () => {
     }
   };
 
+  useEffect(() => {
+    // Executar diagnóstico automático ao montar o componente
+    if (!results.runDate) {
+      runDiagnostics();
+    }
+  }, []);
+
   return (
     <div className="mb-6">
       {!isOpen ? (
         <Button 
           onClick={() => setIsOpen(true)} 
           variant="outline" 
-          className="w-full bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100"
+          className={`w-full ${results.corsErrorCount > 0 ? 'bg-red-50 text-red-800 border-red-200 hover:bg-red-100' : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100'}`}
         >
           <AlertCircle className="w-4 h-4 mr-2" />
-          Verificar problemas de conexão com Google Sheets
+          {results.corsErrorCount > 0 
+            ? `Detectados ${results.corsErrorCount} erros de CORS - Clique para resolver` 
+            : "Verificar problemas de conexão com Google Sheets"}
         </Button>
       ) : (
         <Card className="bg-gray-50 border-gray-200">
@@ -138,6 +156,20 @@ const DiagnosticsPanel = () => {
                     <span className="font-medium">Configuração de URLs</span>
                     <Badge variant={results.configured ? "success" : "destructive"}>
                       {results.configured ? "Configurado" : "Não Configurado"}
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex justify-between items-center py-1 border-b">
+                    <span className="font-medium">Erros de CORS Detectados</span>
+                    <Badge variant={results.corsErrorCount > 0 ? "destructive" : "success"}>
+                      {results.corsErrorCount}
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex justify-between items-center py-1 border-b">
+                    <span className="font-medium">Erros de Rede Detectados</span>
+                    <Badge variant={results.networkErrorCount > 0 ? "destructive" : "success"}>
+                      {results.networkErrorCount}
                     </Badge>
                   </div>
                   
@@ -189,6 +221,9 @@ const DiagnosticsPanel = () => {
                     </>
                   )}
                   
+                  {/* Teste avançado de CORS */}
+                  <AdvancedCORSTest />
+                  
                   {/* Problemas identificados */}
                   {results.issues.length > 0 && (
                     <div className="mt-3 pt-2 border-t">
@@ -206,7 +241,7 @@ const DiagnosticsPanel = () => {
                   
                   {/* Recomendações */}
                   <div className="mt-3 pt-2 border-t">
-                    <h4 className="font-medium mb-2">Solução de problemas:</h4>
+                    <h4 className="font-medium mb-2">Solução de problemas de CORS:</h4>
                     <ul className="text-sm space-y-2">
                       <li className="flex items-start">
                         <CheckCircle className="w-4 h-4 text-green-600 mr-1 mt-0.5 flex-shrink-0" />
@@ -215,6 +250,18 @@ const DiagnosticsPanel = () => {
                       <li className="flex items-start">
                         <CheckCircle className="w-4 h-4 text-green-600 mr-1 mt-0.5 flex-shrink-0" />
                         <span>Nas configurações de implantação, certifique-se que "Quem tem acesso" está definido como "Qualquer pessoa, mesmo anônimos".</span>
+                      </li>
+                      <li className="flex items-start">
+                        <CheckCircle className="w-4 h-4 text-green-600 mr-1 mt-0.5 flex-shrink-0" />
+                        <span>Certifique-se que você está incluindo o código correto em <code>Google_Apps_Script_Code_CLIENTE.js</code> e <code>Google_Apps_Script_Code_LEAD.js</code>.</span>
+                      </li>
+                      <li className="flex items-start">
+                        <CheckCircle className="w-4 h-4 text-green-600 mr-1 mt-0.5 flex-shrink-0" />
+                        <span>Os códigos Apps Script devem incluir <code>ContentService.setMimeType(ContentService.MimeType.JSON)</code> e os cabeçalhos CORS corretos.</span>
+                      </li>
+                      <li className="flex items-start">
+                        <CheckCircle className="w-4 h-4 text-green-600 mr-1 mt-0.5 flex-shrink-0" />
+                        <span>Após modificar o código do Apps Script, reimplante-o através de Implantar &gt; Novo implantação.</span>
                       </li>
                       <li className="flex items-start">
                         <CheckCircle className="w-4 h-4 text-green-600 mr-1 mt-0.5 flex-shrink-0" />
