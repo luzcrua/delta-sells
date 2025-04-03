@@ -54,7 +54,7 @@ export const SHEET_NAMES = {
 };
 
 // Defina como true para usar depuração extendida
-export const DEBUG_MODE: boolean = true;
+export const DEBUG_MODE: boolean = false;
 
 // Nome das colunas esperadas na planilha (usado para debug)
 export const SHEET_COLUMNS = {
