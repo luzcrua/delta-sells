@@ -13,8 +13,8 @@ export const GOOGLE_SHEET_VIEW_URL = {
   LEAD: "https://docs.google.com/spreadsheets/d/1NA-iPBQkAZ-ZG7IST9tUkTCZPHQkuHT1aazRdmcXu14/edit?gid=0#gid=0"
 };
 
-// Senha para acesso ao sistema
-export const ACCESS_PASSWORD = "JOHNALVES";
+// Senha para acesso ao sistema - lida da variável de ambiente ou usa um valor padrão apenas para desenvolvimento
+export const ACCESS_PASSWORD = import.meta.env.VITE_ACCESS_PASSWORD || "JOHNALVES";
 
 // Configuração de log
 export const LOG_ENABLED: boolean = true;

@@ -10,3 +10,6 @@
 
 [build.environment]
   NPM_FLAGS = "--legacy-peer-deps"
+
+# Instruções: Configure a variável de ambiente VITE_ACCESS_PASSWORD no painel do Netlify
+# Acesse: Site settings > Build & deploy > Environment > Environment variables
