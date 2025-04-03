@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,6 +45,22 @@ const DiagnosticsPanel = () => {
     const corsErrorCount = LogService.getCorsErrorCount();
     const networkErrorCount = LogService.getNetworkErrorCount();
     
+    if (!GOOGLE_SHEETS_URL.CLIENTE) {
+      issues.push("A variável de ambiente VITE_GOOGLE_SHEETS_URL_CLIENTE não está configurada no Netlify.");
+    }
+    
+    if (!GOOGLE_SHEETS_URL.LEAD) {
+      issues.push("A variável de ambiente VITE_GOOGLE_SHEETS_URL_LEAD não está configurada no Netlify.");
+    }
+    
+    if (!GOOGLE_SHEET_VIEW_URL.CLIENTE) {
+      issues.push("A variável de ambiente VITE_GOOGLE_SHEET_VIEW_URL_CLIENTE não está configurada no Netlify.");
+    }
+    
+    if (!GOOGLE_SHEET_VIEW_URL.LEAD) {
+      issues.push("A variável de ambiente VITE_GOOGLE_SHEET_VIEW_URL_LEAD não está configurada no Netlify.");
+    }
+    
     setResults({
       ...results,
       configured,
@@ -55,9 +70,7 @@ const DiagnosticsPanel = () => {
       networkErrorCount
     });
     
-    // Testar conexões
     if (configured) {
-      // Testes de conexão
       const clienteConnection = await testGoogleSheetConnection('cliente');
       const leadConnection = await testGoogleSheetConnection('lead');
       
@@ -67,7 +80,6 @@ const DiagnosticsPanel = () => {
         leadConnection,
       }));
       
-      // Testes de método POST
       const clientePost = await testPostMethod('cliente');
       const leadPost = await testPostMethod('lead');
       
@@ -85,16 +97,12 @@ const DiagnosticsPanel = () => {
   };
   
   const openAppsScript = (type: 'cliente' | 'lead') => {
-    // URLs dos Google Sheets
     const url = type === 'cliente' ? GOOGLE_SHEETS_URL.CLIENTE : GOOGLE_SHEETS_URL.LEAD;
     
-    // Extrair o ID do script da URL
-    // Formato: https://script.google.com/macros/s/{SCRIPT_ID}/exec
     const scriptIdMatch = url.match(/\/s\/([^\/]+)\/exec/);
     const scriptId = scriptIdMatch ? scriptIdMatch[1] : null;
     
     if (scriptId) {
-      // URL do Editor de Script
       const scriptEditorUrl = `https://script.google.com/d/${scriptId}/edit`;
       window.open(scriptEditorUrl, '_blank');
     } else {
@@ -104,7 +112,6 @@ const DiagnosticsPanel = () => {
   };
 
   useEffect(() => {
-    // Executar diagnóstico automático ao montar o componente
     if (!results.runDate) {
       runDiagnostics();
     }
@@ -149,7 +156,6 @@ const DiagnosticsPanel = () => {
                 </Button>
               </div>
               
-              {/* Resultados do diagnóstico */}
               {results.runDate && (
                 <div className="space-y-3 pt-2">
                   <div className="flex justify-between items-center py-1 border-b">
@@ -221,10 +227,8 @@ const DiagnosticsPanel = () => {
                     </>
                   )}
                   
-                  {/* Teste avançado de CORS */}
                   <AdvancedCORSTest />
                   
-                  {/* Problemas identificados */}
                   {results.issues.length > 0 && (
                     <div className="mt-3 pt-2 border-t">
                       <h4 className="font-medium mb-2">Problemas identificados:</h4>
@@ -239,7 +243,6 @@ const DiagnosticsPanel = () => {
                     </div>
                   )}
                   
-                  {/* Recomendações */}
                   <div className="mt-3 pt-2 border-t">
                     <h4 className="font-medium mb-2">Solução de problemas de CORS:</h4>
                     <ul className="text-sm space-y-2">

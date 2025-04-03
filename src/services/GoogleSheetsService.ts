@@ -19,6 +19,10 @@ export const isWebhookConfigured = (): boolean => {
   const clienteConfigured = GOOGLE_SHEETS_URL.CLIENTE && GOOGLE_SHEETS_URL.CLIENTE.includes('script.google.com');
   const leadConfigured = GOOGLE_SHEETS_URL.LEAD && GOOGLE_SHEETS_URL.LEAD.includes('script.google.com');
   
+  if (!clienteConfigured || !leadConfigured) {
+    LogService.warn("URLs do Google Sheets não estão configuradas nas variáveis de ambiente");
+  }
+  
   return clienteConfigured && leadConfigured;
 };
 
@@ -170,7 +174,10 @@ export const submitToGoogleSheets = async (formData: any): Promise<{success: boo
   }
   
   if (!url) {
-    return { success: false, message: `URL para ${type} não configurada` };
+    return { 
+      success: false, 
+      message: `URL para ${type} não configurada nas variáveis de ambiente. Configure a variável VITE_GOOGLE_SHEETS_URL_${type.toUpperCase()} no Netlify.` 
+    };
   }
   
   LogService.info(`Tentando enviar dados para ${type} através de ${url}`);
@@ -450,5 +457,12 @@ export const sendToWhatsAppFallback = (formData: any): void => {
  * Obter URL para visualizar a planilha
  */
 export const getGoogleSheetViewUrl = (type: 'cliente' | 'lead'): string => {
-  return type === 'cliente' ? GOOGLE_SHEET_VIEW_URL.CLIENTE : GOOGLE_SHEET_VIEW_URL.LEAD;
+  const url = type === 'cliente' ? GOOGLE_SHEET_VIEW_URL.CLIENTE : GOOGLE_SHEET_VIEW_URL.LEAD;
+  
+  if (!url) {
+    LogService.warn(`URL de visualização para ${type} não configurada nas variáveis de ambiente`);
+    return '#';
+  }
+  
+  return url;
 };

@@ -1,16 +1,16 @@
 
 // Armazena as URLs dos Google Sheets
 // IMPORTANTE: Este arquivo deve ser incluído no .gitignore manualmente
-// Insira abaixo as URLs dos seus Google Apps Script Web Apps entre as aspas
+// As URLs são lidas das variáveis de ambiente para maior segurança
 export const GOOGLE_SHEETS_URL = {
-  CLIENTE: "https://script.google.com/macros/s/AKfycbyRNkHPtBFzTn3Eo6QENL87DzoR1rFg3A4tUX6ftowmBsSNPLEvb-X6peUPkqo2kdUe/exec",
-  LEAD: "https://script.google.com/macros/s/AKfycby6rIx3nwB6Viv0HSGub4c4cTcPjsA3pR8u2skdK8YMrf9OEvwxH5hVJcU0IkqTJDZS/exec"
+  CLIENTE: import.meta.env.VITE_GOOGLE_SHEETS_URL_CLIENTE || "",
+  LEAD: import.meta.env.VITE_GOOGLE_SHEETS_URL_LEAD || ""
 };
 
 // Novas URLs para visualização direta das planilhas
 export const GOOGLE_SHEET_VIEW_URL = {
-  CLIENTE: "https://docs.google.com/spreadsheets/d/13DHwYtX13t6CJ3Fg5mMmPpNHT8rZt7Cio3JwB04ipHY/edit?gid=0#gid=0",
-  LEAD: "https://docs.google.com/spreadsheets/d/1NA-iPBQkAZ-ZG7IST9tUkTCZPHQkuHT1aazRdmcXu14/edit?gid=0#gid=0"
+  CLIENTE: import.meta.env.VITE_GOOGLE_SHEET_VIEW_URL_CLIENTE || "",
+  LEAD: import.meta.env.VITE_GOOGLE_SHEET_VIEW_URL_LEAD || ""
 };
 
 // Senha para acesso ao sistema - lida da variável de ambiente ou usa um valor padrão apenas para desenvolvimento
