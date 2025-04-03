@@ -11,12 +11,17 @@
 [build.environment]
   NPM_FLAGS = "--legacy-peer-deps"
 
-# Instruções: Configure as variáveis de ambiente abaixo no painel do Netlify
+# IMPORTANTE: Configure as variáveis de ambiente abaixo no painel do Netlify
 # Acesse: Site settings > Build & deploy > Environment > Environment variables
 #
 # VITE_ACCESS_PASSWORD = "sua_senha_de_acesso"
-# VITE_GOOGLE_SHEETS_URL_CLIENTE = "insira na variavel do seu provedor"
-# VITE_GOOGLE_SHEETS_URL_LEAD = "insira na variavel do seu provedor"
-# VITE_GOOGLE_SHEET_VIEW_URL_CLIENTE = "insira na variavel do seu provedor
-# VITE_GOOGLE_SHEET_VIEW_URL_LEAD = "insira na variavel do seu provedor"
-
+# VITE_GOOGLE_SHEETS_URL_CLIENTE = "sua_url_de_script_cliente"
+# VITE_GOOGLE_SHEETS_URL_LEAD = "sua_url_de_script_lead"
+# VITE_GOOGLE_SHEET_VIEW_URL_CLIENTE = "sua_url_de_visualizacao_cliente"
+# VITE_GOOGLE_SHEET_VIEW_URL_LEAD = "sua_url_de_visualizacao_lead"
+#
+# NOTAS:
+# 1. Certifique-se de que todas as variáveis estejam corretamente inseridas no Netlify
+# 2. Após adicionar ou alterar variáveis de ambiente, faça um novo deploy
+# 3. As variáveis devem começar com VITE_
+# 4. Caso altere variáveis de ambiente, aguarde um novo deploy para refletir as mudanças

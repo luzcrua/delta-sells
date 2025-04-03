@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ACCESS_PASSWORD } from "@/env";
+import { ACCESS_PASSWORD, DEBUG_MODE } from "@/env";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { LogService } from "@/services/LogService";
@@ -23,6 +22,25 @@ const Login = () => {
 
   // Verificar se já está autenticado no localStorage
   useEffect(() => {
+    // Log ambiente e variáveis ao iniciar
+    if (DEBUG_MODE) {
+      console.log('📝 Ambiente: ', import.meta.env.MODE);
+      console.log('📝 Senha configurada no env: ', ACCESS_PASSWORD ? '✓ Definida' : '❌ Indefinida');
+      console.log('📝 VITE_ACCESS_PASSWORD está definida: ', import.meta.env.VITE_ACCESS_PASSWORD ? '✓ Sim' : '❌ Não');
+      
+      // Log outras variáveis de ambiente
+      console.log('📝 VITE_GOOGLE_SHEETS_URL_CLIENTE: ', 
+        import.meta.env.VITE_GOOGLE_SHEETS_URL_CLIENTE ? '✓ Definida' : '❌ Indefinida');
+      console.log('📝 VITE_GOOGLE_SHEETS_URL_LEAD: ', 
+        import.meta.env.VITE_GOOGLE_SHEETS_URL_LEAD ? '✓ Definida' : '❌ Indefinida');
+      console.log('📝 VITE_GOOGLE_SHEET_VIEW_URL_CLIENTE: ', 
+        import.meta.env.VITE_GOOGLE_SHEET_VIEW_URL_CLIENTE ? '✓ Definida' : '❌ Indefinida');
+      console.log('📝 VITE_GOOGLE_SHEET_VIEW_URL_LEAD: ', 
+        import.meta.env.VITE_GOOGLE_SHEET_VIEW_URL_LEAD ? '✓ Definida' : '❌ Indefinida');
+      
+      LogService.info("Verificando variáveis de ambiente na inicialização");
+    }
+    
     const auth = localStorage.getItem("deltaAuthenticated");
     if (auth === "true") {
       setIsAuthenticated(true);
@@ -100,6 +118,14 @@ const Login = () => {
       return;
     }
     
+    // Debug da senha informada vs senha configurada
+    if (DEBUG_MODE) {
+      console.log('🔑 Tentativa de login:');
+      console.log('🔑 ACCESS_PASSWORD definida: ', ACCESS_PASSWORD ? '✓ Sim' : '❌ Não');
+      console.log('🔑 Senha digitada: ', password);
+      console.log('🔑 Comparação: ', password === ACCESS_PASSWORD ? '✓ Igual' : '❌ Diferente');
+    }
+    
     if (password === ACCESS_PASSWORD) {
       // Senha correta
       LogService.info("Login bem-sucedido");
@@ -156,6 +182,17 @@ const Login = () => {
           <h1 className="text-3xl font-bold text-delta-950">DELTA SELLS</h1>
           <p className="text-delta-600 mt-2">Sistema de gerenciamento</p>
         </div>
+
+        {DEBUG_MODE && (
+          <Alert className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Modo Debug</AlertTitle>
+            <AlertDescription>
+              Ambiente: {import.meta.env.MODE}<br/>
+              Variáveis env: {ACCESS_PASSWORD ? '✓ ACCESS_PASSWORD definida' : '❌ ACCESS_PASSWORD não definida'}
+            </AlertDescription>
+          </Alert>
+        )}
 
         {lockedUntil && Date.now() < lockedUntil && (
           <Alert variant="destructive" className="mb-6">
