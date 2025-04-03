@@ -15,8 +15,8 @@
 # Acesse: Site settings > Build & deploy > Environment > Environment variables
 #
 # VITE_ACCESS_PASSWORD = "sua_senha_de_acesso"
-# VITE_GOOGLE_SHEETS_URL_CLIENTE = "https://script.google.com/macros/s/AKfycbyRNkHPtBFzTn3Eo6QENL87DzoR1rFg3A4tUX6ftowmBsSNPLEvb-X6peUPkqo2kdUe/exec"
-# VITE_GOOGLE_SHEETS_URL_LEAD = "https://script.google.com/macros/s/AKfycby6rIx3nwB6Viv0HSGub4c4cTcPjsA3pR8u2skdK8YMrf9OEvwxH5hVJcU0IkqTJDZS/exec"
-# VITE_GOOGLE_SHEET_VIEW_URL_CLIENTE = "https://docs.google.com/spreadsheets/d/13DHwYtX13t6CJ3Fg5mMmPpNHT8rZt7Cio3JwB04ipHY/edit?gid=0#gid=0"
-# VITE_GOOGLE_SHEET_VIEW_URL_LEAD = "https://docs.google.com/spreadsheets/d/1NA-iPBQkAZ-ZG7IST9tUkTCZPHQkuHT1aazRdmcXu14/edit?gid=0#gid=0"
+# VITE_GOOGLE_SHEETS_URL_CLIENTE = "insira na variavel do seu provedor"
+# VITE_GOOGLE_SHEETS_URL_LEAD = "insira na variavel do seu provedor"
+# VITE_GOOGLE_SHEET_VIEW_URL_CLIENTE = "insira na variavel do seu provedor
+# VITE_GOOGLE_SHEET_VIEW_URL_LEAD = "insira na variavel do seu provedor"
 
