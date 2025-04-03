@@ -14,7 +14,7 @@ export const GOOGLE_SHEET_VIEW_URL = {
 };
 
 // Senha para acesso ao sistema - lida da variável de ambiente ou usa um valor padrão apenas para desenvolvimento
-export const ACCESS_PASSWORD = import.meta.env.VITE_ACCESS_PASSWORD || "JOHNALVES";
+export const ACCESS_PASSWORD = import.meta.env.VITE_ACCESS_PASSWORD;
 
 // Configuração de log
 export const LOG_ENABLED: boolean = true;
