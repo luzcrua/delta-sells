@@ -12,23 +12,46 @@
 // Função que será chamada quando o Apps Script receber uma solicitação
 function doPost(e) {
   try {
+    // Ativar CORS - permite acesso de qualquer origem
+    var output = ContentService.createTextOutput();
+    var headers = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Content-Type": "application/json"
+    };
+    
+    // Para solicitações OPTIONS (pré-voo)
+    if (e && e.parameter && e.parameter.method === 'OPTIONS') {
+      return output.setContent(JSON.stringify({"status": "ok"}))
+                   .setMimeType(ContentService.MimeType.JSON)
+                   .setHeaders(headers);
+    }
+    
     // Verificar se há dados na solicitação
     if (!e || !e.parameter || !e.parameter.data) {
-      return ContentService.createTextOutput(JSON.stringify({
+      return output.setContent(JSON.stringify({
         success: false,
         message: "Nenhum dado recebido."
-      })).setMimeType(ContentService.MimeType.JSON);
+      }))
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeaders(headers);
     }
     
     // Analisar os dados JSON da solicitação
     const data = JSON.parse(e.parameter.data);
     
+    // Log para debug
+    Logger.log("Dados recebidos: " + JSON.stringify(data));
+    
     // Verificar se é o tipo correto de formulário
     if (data.formType !== 'cliente') {
-      return ContentService.createTextOutput(JSON.stringify({
+      return output.setContent(JSON.stringify({
         success: false,
         message: "Tipo de formulário incorreto. Este endpoint é apenas para dados de clientes."
-      })).setMimeType(ContentService.MimeType.JSON);
+      }))
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeaders(headers);
     }
     
     // Obter a planilha ativa
@@ -51,10 +74,13 @@ function doPost(e) {
         ]);
       }
     } catch (err) {
-      return ContentService.createTextOutput(JSON.stringify({
+      Logger.log("Erro ao acessar a planilha: " + err.toString());
+      return output.setContent(JSON.stringify({
         success: false,
         message: "Erro ao acessar a planilha: " + err.toString()
-      })).setMimeType(ContentService.MimeType.JSON);
+      }))
+      .setMimeType(ContentService.MimeType.JSON)
+      .setHeaders(headers);
     }
     
     // Adicionar timestamp ao registro
@@ -89,6 +115,9 @@ function doPost(e) {
       data.observacao || ""              // OBSERVACOES
     ];
     
+    // Log de dados antes de inserir
+    Logger.log("Dados a serem inseridos: " + JSON.stringify(rowData));
+    
     // Encontrar a próxima linha vazia na planilha
     const lastRow = sheet.getLastRow();
     const startRow = lastRow + 1;
@@ -96,27 +125,67 @@ function doPost(e) {
     // Adicionar os dados à planilha em uma única linha
     sheet.getRange(startRow, 1, 1, rowData.length).setValues([rowData]);
     
+    // Log de confirmação após inserção
+    Logger.log("Dados adicionados à planilha com sucesso na linha: " + startRow);
+    
     // Retornar uma resposta de sucesso
-    return ContentService.createTextOutput(JSON.stringify({
+    return output.setContent(JSON.stringify({
       success: true,
       message: "Dados do cliente salvos com sucesso na planilha!",
       sheetName: "Cliente",
       row: startRow
-    })).setMimeType(ContentService.MimeType.JSON);
+    }))
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeaders(headers);
     
   } catch (error) {
+    // Log do erro
+    Logger.log("Erro ao processar dados: " + error.toString());
+    
     // Em caso de erro, retornar uma resposta de erro
     return ContentService.createTextOutput(JSON.stringify({
       success: false,
       message: "Erro ao processar dados: " + error.toString()
-    })).setMimeType(ContentService.MimeType.JSON);
+    }))
+    .setMimeType(ContentService.MimeType.JSON)
+    .setHeaders({
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+      "Content-Type": "application/json"
+    });
   }
 }
 
 // Função que será chamada quando o Apps Script receber uma solicitação GET
 function doGet(e) {
-  return ContentService.createTextOutput(JSON.stringify({
+  var output = ContentService.createTextOutput();
+  var headers = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Content-Type": "application/json"
+  };
+
+  return output.setContent(JSON.stringify({
     success: true,
     message: "O serviço Cliente está online e pronto para receber dados via POST."
-  })).setMimeType(ContentService.MimeType.JSON);
+  }))
+  .setMimeType(ContentService.MimeType.JSON)
+  .setHeaders(headers);
+}
+
+// Função para lidar com requisições OPTIONS (pré-voo)
+function doOptions(e) {
+  var output = ContentService.createTextOutput();
+  var headers = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Content-Type": "application/json"
+  };
+  
+  return output.setContent(JSON.stringify({"status": "ok"}))
+               .setMimeType(ContentService.MimeType.JSON)
+               .setHeaders(headers);
 }
