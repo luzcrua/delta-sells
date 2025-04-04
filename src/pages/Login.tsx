@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ACCESS_PASSWORD, DEBUG_MODE } from "@/env";
@@ -5,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { LogService } from "@/services/LogService";
 import { useToast } from "@/hooks/use-toast";
-import { Lock, AlertCircle } from "lucide-react";
+import { Lock, AlertCircle, Moon, Sun } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { useTheme } from "@/hooks/use-theme";
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_DURATION = 72 * 60 * 60 * 1000; // 72 hours in milliseconds
@@ -19,6 +21,7 @@ const Login = () => {
   const [remainingTime, setRemainingTime] = useState<string>("");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
 
   // Verificar se já está autenticado no localStorage
   useEffect(() => {
@@ -175,19 +178,35 @@ const Login = () => {
     }
   };
 
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-delta-50 to-delta-100 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-delta-950">DELTA SELLS</h1>
-          <p className="text-delta-600 mt-2">Sistema de gerenciamento</p>
+    <div className="min-h-screen bg-gradient-to-br from-background to-background/80 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-md bg-card rounded-xl shadow-lg p-6 md:p-8 relative">
+        <button
+          onClick={toggleTheme}
+          className="absolute top-4 right-4 p-2 rounded-full bg-secondary hover:bg-secondary/80 transition-colors"
+          aria-label="Toggle theme"
+        >
+          {theme === "dark" ? (
+            <Sun className="h-5 w-5" />
+          ) : (
+            <Moon className="h-5 w-5" />
+          )}
+        </button>
+
+        <div className="text-center mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">DELTA SELLS</h1>
+          <p className="text-muted-foreground mt-2">Sistema de gerenciamento</p>
         </div>
 
         {DEBUG_MODE && (
-          <Alert className="mb-6">
+          <Alert className="mb-4 text-xs md:text-sm">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Modo Debug</AlertTitle>
-            <AlertDescription>
+            <AlertDescription className="break-words">
               Ambiente: {import.meta.env.MODE}<br/>
               Variáveis env: {ACCESS_PASSWORD ? '✓ ACCESS_PASSWORD definida' : '❌ ACCESS_PASSWORD não definida'}
             </AlertDescription>
@@ -195,7 +214,7 @@ const Login = () => {
         )}
 
         {lockedUntil && Date.now() < lockedUntil && (
-          <Alert variant="destructive" className="mb-6">
+          <Alert variant="destructive" className="mb-4 text-xs md:text-sm">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Conta bloqueada</AlertTitle>
             <AlertDescription>
@@ -205,7 +224,7 @@ const Login = () => {
         )}
         
         {!lockedUntil && loginAttempts > 0 && loginAttempts < MAX_LOGIN_ATTEMPTS && (
-          <Alert className="mb-6">
+          <Alert className="mb-4 text-xs md:text-sm">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Atenção!</AlertTitle>
             <AlertDescription>
@@ -214,14 +233,14 @@ const Login = () => {
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <label htmlFor="password" className="block text-sm font-medium text-delta-700">
+            <label htmlFor="password" className="block text-sm font-medium text-foreground">
               Digite a senha para acessar
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <Lock className="h-5 w-5 text-delta-400" />
+                <Lock className="h-5 w-5 text-muted-foreground" />
               </div>
               <Input
                 id="password"
@@ -247,7 +266,7 @@ const Login = () => {
         </form>
       </div>
       
-      <div className="mt-8 text-center text-delta-700 text-sm">
+      <div className="mt-6 text-center text-muted-foreground text-xs md:text-sm px-4">
         <p>© 2025 DELTA SELLS. Todos os direitos reservados. Idealizado por Arinelson Santos</p>
       </div>
     </div>

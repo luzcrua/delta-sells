@@ -77,7 +77,7 @@ const FormInput = ({
         htmlFor={id} 
         className={cn(
           "transition-all duration-200",
-          focused ? "text-delta-500" : "",
+          focused ? "text-delta-500 dark:text-delta-400" : "",
           required ? "after:content-['*'] after:ml-1 after:text-destructive" : ""
         )}
       >
@@ -96,7 +96,7 @@ const FormInput = ({
         placeholder={placeholder}
         className={cn(
           "transition-all duration-200",
-          focused ? "border-delta-500 ring-1 ring-delta-300" : "",
+          focused ? "border-delta-500 dark:border-delta-400 ring-1 ring-delta-300 dark:ring-delta-600" : "",
           error ? "border-destructive" : ""
         )}
         maxLength={maxLength}

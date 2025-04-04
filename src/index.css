@@ -98,11 +98,11 @@
 }
 
 .tab-button.active {
-  @apply border-delta-600 text-delta-700;
+  @apply border-delta-600 text-delta-700 dark:text-delta-300;
 }
 
 .tab-button:not(.active) {
-  @apply border-transparent text-delta-400 hover:text-delta-600;
+  @apply border-transparent text-delta-400 hover:text-delta-600 dark:hover:text-delta-300;
 }
 
 .tab-panel {
@@ -164,4 +164,3 @@
 .debug-entry.debug {
   @apply border-blue-400;
 }
-
