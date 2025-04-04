@@ -125,7 +125,7 @@ const Dashboard: React.FC = () => {
       {showDiagnostics && (
         <div className="mb-6">
           <DiagnosticsPanel />
-          {DEBUG_MODE && <AdvancedCORSTest className="mt-4" />}
+          {DEBUG_MODE && <AdvancedCORSTest />}
           <div className="mt-3 flex justify-end">
             <Button
               variant="ghost"
