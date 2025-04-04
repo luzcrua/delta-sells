@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,7 +32,8 @@ const CustomerForm = () => {
   const [showSheetLink, setShowSheetLink] = useState(false);
   const [valorParcela, setValorParcela] = useState("");
   const [datasPagamento, setDatasPagamento] = useState<string[]>([]);
-  
+  const [valorNumericoTotal, setValorNumericoTotal] = useState(0);
+
   useEffect(() => {
     const configured = isWebhookConfigured();
     setIsConfigured(configured);
@@ -79,22 +79,18 @@ const CustomerForm = () => {
   const frete = watch("frete");
   const parcelamento = watch("parcelamento");
   const dataPagamento = watch("dataPagamento");
-  
-  // Calcula o valor total considerando descontos e frete
+
   useEffect(() => {
     try {
-      // Limpa e converte o valor e frete para números
       const cleanValor = valor.replace(/[^\d,]/g, "").replace(",", ".");
       const cleanFrete = frete.replace(/[^\d,]/g, "").replace(",", ".");
       
-      // Parseia os valores para números
       const parsedValor = cleanValor ? parseFloat(cleanValor) : 0;
       const parsedFrete = cleanFrete ? parseFloat(cleanFrete) : 0;
       
       setValorNumerico(parsedValor);
       setFreteNumerico(parsedFrete);
       
-      // Calcula o desconto baseado no cupom selecionado
       let descontoPercentual = 0;
       
       if (cupomDesconto === "5% OFF") {
@@ -105,34 +101,27 @@ const CustomerForm = () => {
         descontoPercentual = 15;
       }
       
-      // Calcula o valor com desconto
       const desconto = (parsedValor * descontoPercentual) / 100;
       const valorComDesconto = parsedValor - desconto;
       
-      // Adiciona o frete ao valor com desconto
       const valorComDescontoEFrete = valorComDesconto + parsedFrete;
       
-      // Valor final (sem juros pois todos são sem juros)
       let valorFinal = valorComDescontoEFrete;
       let valorParcelaCalculado = valorFinal;
       let numParcelas = 1;
       let datasParcelas: string[] = [];
       
-      // Calcula parcelamento (todos sem juros)
       if (parcelamento && parcelamento !== "Sem parcelamento") {
         numParcelas = parseInt(parcelamento.split("x")[0]);
         
-        // Calcula o valor da parcela
         valorParcelaCalculado = valorFinal / numParcelas;
         
-        // Formata o valor da parcela
         setValorParcela(formatCurrency(String(Math.round(valorParcelaCalculado * 100))));
         
-        // Gera as datas de pagamento das parcelas
         if (dataPagamento) {
           const novasDatasParcelas = [];
           for (let i = 0; i < numParcelas; i++) {
-            const dataParcela = addDays(dataPagamento, i * 30); // 30 dias entre cada parcela
+            const dataParcela = addDays(dataPagamento, i * 30);
             novasDatasParcelas.push(format(dataParcela, "dd/MM/yy"));
           }
           setDatasPagamento(novasDatasParcelas);
@@ -144,12 +133,12 @@ const CustomerForm = () => {
         setDatasPagamento([]);
       }
       
-      // Arredonda para duas casas decimais
       const totalArredondado = Math.round(valorFinal * 100) / 100;
       const totalEmCentavos = Math.round(totalArredondado * 100);
       
-      // Atualiza o valor total no formulário
-      setValue("valorTotal", formatCurrency(String(totalEmCentavos)));
+      setValorNumericoTotal(totalArredondado);
+      
+      setValue("valorTotal", formatCurrency(String(totalEmCentavos)).replace('R$', '').trim());
       
       LogService.debug("Valores atualizados", { 
         parsedValor, 
@@ -169,7 +158,7 @@ const CustomerForm = () => {
       });
     } catch (error) {
       LogService.error("Erro ao calcular valor total", error);
-      setValue("valorTotal", formatCurrency(String(parseFloat(frete.replace(/[^\d,]/g, "").replace(",", ".")) * 100 || 1500)));
+      setValue("valorTotal", formatCurrency(String(parseFloat(frete.replace(/[^\d,]/g, "").replace(",", ".")) * 100 || 1500)).replace('R$', '').trim());
     }
   }, [valor, frete, cupomDesconto, formaPagamento, parcelamento, dataPagamento, setValue]);
 
@@ -218,6 +207,8 @@ const CustomerForm = () => {
         dataEntrega: data.dataEntrega ? format(data.dataEntrega, "dd/MM/yy") : "",
         valorParcela: valorParcela,
         datasPagamento: datasPagamento.join(", "),
+        valorTotalNumerico: valorNumericoTotal,
+        valorTotal: data.valorTotal,
         formType: 'cliente',
       };
       
@@ -571,11 +562,11 @@ const CustomerForm = () => {
                 error={errors.valorTotal?.message}
                 className="font-semibold text-lg"
                 formatter={(value) => {
-                // Usa a função formatCurrency existente, mas remove o cifrão
-                return formatCurrency(value).replace('R$', '').trim();
-                  }}
+                  return formatCurrency(value).replace('R$', '').trim();
+                }}
                 required
                 readOnly={true}
+                numericValue={valorNumericoTotal}
               />
               
               {parcelamento && parcelamento !== "Sem parcelamento" && valorParcela && (

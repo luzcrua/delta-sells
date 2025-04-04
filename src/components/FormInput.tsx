@@ -19,6 +19,8 @@ interface FormInputProps {
   maxLength?: number;
   disabled?: boolean;
   readOnly?: boolean;
+  // Adicionando a prop para o valor numérico associado
+  numericValue?: number;
 }
 
 const FormInput = ({
@@ -36,6 +38,7 @@ const FormInput = ({
   maxLength,
   disabled,
   readOnly,
+  numericValue,
 }: FormInputProps) => {
   const [focused, setFocused] = useState(false);
   const [formattedValue, setFormattedValue] = useState(value);
@@ -99,6 +102,7 @@ const FormInput = ({
         maxLength={maxLength}
         disabled={disabled}
         readOnly={readOnly}
+        data-numeric-value={numericValue !== undefined ? numericValue : ''}
       />
       {error && <p className="text-destructive text-sm">{error}</p>}
     </div>

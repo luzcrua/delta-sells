@@ -70,7 +70,7 @@ function doPost(e) {
           "DIA/HORA", "NOME", "CPF", "TELEFONE", "GÊNERO", "LINHA", "PEÇA", 
           "COR", "TAMANHO", "VALOR", "FORMA DE PAGAMENTO", "PARCELADO?",
           "LOCALIZACAO", "DESCONTO?", "NOME DO CUPOM", "FRETE", "DATA DE PAGAMENTO", 
-          "DATA DE ENTREGA", "VALOR TOTAL", "OBSERVACOES"
+          "DATA DE ENTREGA", "VALOR TOTAL", "VALOR TOTAL NUMÉRICO", "OBSERVACOES"
         ]);
       }
     } catch (err) {
@@ -111,7 +111,8 @@ function doPost(e) {
       data.frete || "",                  // FRETE
       data.dataPagamento || "",          // DATA DE PAGAMENTO
       data.dataEntrega || "",            // DATA DE ENTREGA
-      data.valorTotal || "",             // VALOR TOTAL
+      data.valorTotal || "",             // VALOR TOTAL (texto)
+      data.valorTotalNumerico || 0,      // VALOR TOTAL NUMÉRICO
       data.observacao || ""              // OBSERVACOES
     ];
     
@@ -124,6 +125,16 @@ function doPost(e) {
     
     // Adicionar os dados à planilha em uma única linha
     sheet.getRange(startRow, 1, 1, rowData.length).setValues([rowData]);
+    
+    // Formatar célula do valor numérico como número
+    if (data.valorTotalNumerico) {
+      try {
+        const valorTotalNumericoCell = sheet.getRange(startRow, 20); // Coluna 20 é VALOR TOTAL NUMÉRICO
+        valorTotalNumericoCell.setNumberFormat("0.00");
+      } catch (formatError) {
+        Logger.log("Erro ao formatar célula de valor numérico: " + formatError.toString());
+      }
+    }
     
     // Log de confirmação após inserção
     Logger.log("Dados adicionados à planilha com sucesso na linha: " + startRow);
