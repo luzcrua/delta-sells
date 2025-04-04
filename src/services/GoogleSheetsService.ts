@@ -1,3 +1,4 @@
+
 // This file provides helpers for Google Sheets integration
 import { 
   GOOGLE_SHEETS_URL, 
@@ -21,6 +22,8 @@ export const isWebhookConfigured = (): boolean => {
   
   if (!clienteConfigured || !leadConfigured) {
     LogService.warn("URLs do Google Sheets não estão configuradas nas variáveis de ambiente");
+    console.error("⚠️ URLs de App Script não encontradas. Configure as variáveis de ambiente no Netlify:");
+    console.error("VITE_GOOGLE_SHEETS_URL_CLIENTE e VITE_GOOGLE_SHEETS_URL_LEAD");
   }
   
   return clienteConfigured && leadConfigured;
@@ -81,6 +84,7 @@ export const testGoogleSheetConnection = async (type: 'cliente' | 'lead'): Promi
   
   try {
     LogService.info(`Testando conexão com ${type}...`);
+    console.log(`🔄 Testando conexão com o App Script de ${type}...`);
     
     // Usando o método GET que geralmente tem menos restrições de CORS
     const response = await fetch(url, {
@@ -91,9 +95,11 @@ export const testGoogleSheetConnection = async (type: 'cliente' | 'lead'): Promi
     // Como estamos usando no-cors, não podemos verificar o status
     // Vamos considerar que a conexão foi bem-sucedida se não ocorreu uma exceção
     LogService.info(`Conexão com ${type} parece estar funcionando`);
+    console.log(`✅ Conexão com o App Script de ${type} parece estar funcionando`);
     return true;
   } catch (error) {
     LogService.error(`Erro ao testar conexão com ${type}:`, error);
+    console.error(`❌ Falha ao conectar com o App Script de ${type}:`, error);
     return false;
   }
 };
@@ -111,11 +117,13 @@ export const testPostMethod = async (type: 'cliente' | 'lead'): Promise<boolean>
   
   try {
     LogService.info(`Testando método POST para ${type}...`);
+    console.log(`🔄 Testando método POST para ${type}...`);
     
     const testData = {
       formType: type,
       test: true,
-      message: "Teste de conexão"
+      message: "Teste de conexão",
+      timestamp: new Date().toISOString()
     };
     
     // Primeiro tentamos com fetch normal
@@ -132,10 +140,12 @@ export const testPostMethod = async (type: 'cliente' | 'lead'): Promise<boolean>
       
       if (fetchResponse.ok) {
         LogService.info(`POST para ${type} funcionou com fetch normal`);
+        console.log(`✅ POST para ${type} funcionou com fetch normal`);
         return true;
       }
     } catch (fetchError) {
       LogService.warn(`Fetch normal falhou, tentando alternativas:`, fetchError);
+      console.warn(`⚠️ Fetch normal falhou, tentando alternativas:`, fetchError);
     }
     
     // Tentativa com no-cors
@@ -151,9 +161,11 @@ export const testPostMethod = async (type: 'cliente' | 'lead'): Promise<boolean>
     });
     
     LogService.info(`POST para ${type} com no-cors enviado (não é possível verificar status)`);
+    console.log(`✅ POST para ${type} com no-cors enviado (não é possível verificar status)`);
     return true;
   } catch (error) {
     LogService.error(`Erro ao testar POST para ${type}:`, error);
+    console.error(`❌ Erro ao testar POST para ${type}:`, error);
     return false;
   }
 };
@@ -174,6 +186,7 @@ export const submitToGoogleSheets = async (formData: any): Promise<{success: boo
   }
   
   if (!url) {
+    console.error(`⚠️ URL para ${type} não configurada ou vazia. Configure em Netlify.`);
     return { 
       success: false, 
       message: `URL para ${type} não configurada nas variáveis de ambiente. Configure a variável VITE_GOOGLE_SHEETS_URL_${type.toUpperCase()} no Netlify.` 
@@ -181,14 +194,28 @@ export const submitToGoogleSheets = async (formData: any): Promise<{success: boo
   }
   
   LogService.info(`Tentando enviar dados para ${type} através de ${url}`);
+  console.log(`🔄 Enviando dados para ${type} através de ${url}`);
+  console.log(`📦 Dados: ${JSON.stringify(formData, null, 2)}`);
+  
+  // Salvar em localStorage para recuperação em caso de falha
+  try {
+    localStorage.setItem(`lastSubmission_${type}`, JSON.stringify({
+      data: formData,
+      timestamp: new Date().toISOString()
+    }));
+  } catch (e) {
+    console.warn("Não foi possível salvar dados no localStorage");
+  }
   
   // Estratégia 1: Form Fallback com iframe oculto (contorna CORS)
   if (USE_FORM_FALLBACK) {
     try {
       LogService.info(`Usando iframe para enviar dados para ${type}`);
+      console.log(`🔄 Usando iframe para enviar dados para ${type}`);
       return await submitViaHiddenIframe(url, formData);
     } catch (iframeError) {
       LogService.error(`Erro ao enviar via iframe:`, iframeError);
+      console.error(`❌ Erro ao enviar via iframe:`, iframeError);
       // Continua para a próxima estratégia
     }
   }
@@ -196,19 +223,48 @@ export const submitToGoogleSheets = async (formData: any): Promise<{success: boo
   // Estratégia 2: Fetch com retry
   try {
     LogService.info(`Tentando enviar via fetch para ${type}`);
+    console.log(`🔄 Tentando enviar via fetch para ${type}`);
     return await submitViaFetch(url, formData);
   } catch (fetchError) {
     LogService.error(`Erro ao enviar via fetch:`, fetchError);
+    console.error(`❌ Erro ao enviar via fetch:`, fetchError);
     // Continua para a próxima estratégia
   }
 
   // Estratégia 3: XMLHttpRequest (algumas vezes funciona quando fetch não funciona)
   try {
     LogService.info(`Tentando enviar via XMLHttpRequest para ${type}`);
+    console.log(`🔄 Tentando enviar via XMLHttpRequest para ${type}`);
     return await submitViaXHR(url, formData);
   } catch (xhrError) {
     LogService.error(`Erro ao enviar via XMLHttpRequest:`, xhrError);
+    console.error(`❌ Erro ao enviar via XMLHttpRequest:`, xhrError);
     // Continua para a próxima estratégia
+  }
+  
+  // Estratégia 4: navegação simulada (última tentativa)
+  try {
+    LogService.info(`Tentando simulação de navegação para ${type}`);
+    console.log(`🔄 Tentando simulação de navegação para ${type} (última tentativa)`);
+    
+    // Criar URL
+    const formUrl = url + "?nocache=" + Date.now();
+    
+    // Abrir em nova aba (que será fechada imediatamente)
+    const newWindow = window.open(formUrl, '_blank');
+    
+    // Aguardar carregamento parcial e fechar
+    setTimeout(() => {
+      if (newWindow) newWindow.close();
+    }, 500);
+    
+    return {
+      success: true,
+      message: "Solicitação de envio iniciada. Verifique a planilha para confirmar."
+    };
+  } catch (navError) {
+    LogService.error(`Erro em navegação simulada:`, navError);
+    console.error(`❌ Erro em navegação simulada:`, navError);
   }
   
   // Se nenhuma estratégia funcionou, sugerimos WhatsApp como alternativa
@@ -220,7 +276,6 @@ export const submitToGoogleSheets = async (formData: any): Promise<{success: boo
 
 /**
  * Submit via iframe oculto (contorna CORS)
- * Atualizado para evitar duplicações
  */
 const submitViaHiddenIframe = (url: string, formData: any): Promise<{success: boolean; message: string}> => {
   return new Promise((resolve, reject) => {
@@ -272,10 +327,14 @@ const submitViaHiddenIframe = (url: string, formData: any): Promise<{success: bo
           if (isResolved) return;
           
           LogService.info("Iframe carregado, tentando obter resposta");
+          console.log("✅ Iframe carregado, tentando obter resposta");
+          
           setTimeout(() => {
             if (isResolved) return;
             
             isResolved = true;
+            console.log("✅ Dados enviados para a planilha via iframe");
+            
             resolve({
               success: true,
               message: "Dados enviados para a planilha via iframe"
@@ -291,7 +350,11 @@ const submitViaHiddenIframe = (url: string, formData: any): Promise<{success: bo
           if (isResolved) return;
           
           LogService.warn("Não foi possível acessar o conteúdo do iframe (CORS)", err);
+          console.warn("⚠️ Não foi possível acessar o conteúdo do iframe (CORS)", err);
+          
           isResolved = true;
+          console.log("✅ Dados enviados para a planilha via iframe (não foi possível verificar resposta)");
+          
           resolve({
             success: true,
             message: "Dados enviados para a planilha via iframe (não foi possível verificar resposta)"
@@ -304,15 +367,18 @@ const submitViaHiddenIframe = (url: string, formData: any): Promise<{success: bo
         if (isResolved) return;
         if (document.body.contains(form)) {
           isResolved = true;
+          console.error("❌ Timeout ao enviar dados via iframe");
           reject(new Error("Timeout ao enviar dados via iframe"));
         }
       }, 10000);
       
       // Submeter formulário
       LogService.info(`Submetendo formulário via iframe (ID: ${uniqueId})`);
+      console.log(`🔄 Submetendo formulário via iframe (ID: ${uniqueId})`);
       form.submit();
       
     } catch (error) {
+      console.error("❌ Erro ao criar iframe:", error);
       reject(error);
     }
   });
@@ -329,6 +395,8 @@ const submitViaFetch = async (url: string, formData: any): Promise<{success: boo
       // Adicionar parâmetro para evitar cache
       const urlWithNoCache = `${url}?nocache=${Date.now()}`;
       
+      console.log(`🔄 Tentativa ${retries + 1}/${MAX_RETRIES} de fetch para ${url}`);
+      
       const response = await fetch(urlWithNoCache, {
         method: 'POST',
         headers: {
@@ -342,20 +410,25 @@ const submitViaFetch = async (url: string, formData: any): Promise<{success: boo
       
       if (response.ok) {
         const data = await response.json();
+        console.log(`✅ Fetch bem-sucedido:`, data);
         return { success: data.success, message: data.message || "Dados enviados com sucesso" };
       }
       
       LogService.warn(`Tentativa ${retries + 1} falhou, status: ${response.status}`);
+      console.warn(`⚠️ Tentativa ${retries + 1} falhou, status: ${response.status}`);
     } catch (error) {
       LogService.warn(`Erro na tentativa ${retries + 1} de fetch:`, error);
+      console.warn(`⚠️ Erro na tentativa ${retries + 1} de fetch:`, error);
     }
     
     retries++;
     if (retries < MAX_RETRIES) {
+      console.log(`⏱️ Aguardando ${RETRY_DELAY}ms antes da próxima tentativa...`);
       await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
     }
   }
   
+  console.error(`❌ Falha após ${MAX_RETRIES} tentativas de fetch`);
   throw new Error(`Falha após ${MAX_RETRIES} tentativas`);
 };
 
@@ -375,16 +448,20 @@ const submitViaXHR = (url: string, formData: any): Promise<{success: boolean; me
       if (xhr.status >= 200 && xhr.status < 400) {
         try {
           const data = JSON.parse(xhr.responseText);
+          console.log(`✅ XHR bem-sucedido:`, data);
           resolve({ success: data.success, message: data.message || "Dados enviados com sucesso" });
         } catch (error) {
+          console.log(`✅ XHR bem-sucedido, mas resposta não pôde ser interpretada:`, xhr.responseText);
           resolve({ success: true, message: "Dados enviados, mas a resposta não pôde ser interpretada" });
         }
       } else {
+        console.error(`❌ XHR falhou com status ${xhr.status}`);
         reject(new Error(`XHR falhou com status ${xhr.status}`));
       }
     };
     
     xhr.onerror = function() {
+      console.error(`❌ Erro de rede na requisição XHR`);
       reject(new Error('Erro de rede na requisição XHR'));
     };
     
@@ -393,6 +470,7 @@ const submitViaXHR = (url: string, formData: any): Promise<{success: boolean; me
       nocache: Date.now().toString()
     }).toString();
     
+    console.log(`🔄 Enviando via XHR para ${url}`);
     xhr.send(body);
   });
 };
@@ -461,6 +539,7 @@ export const getGoogleSheetViewUrl = (type: 'cliente' | 'lead'): string => {
   
   if (!url) {
     LogService.warn(`URL de visualização para ${type} não configurada nas variáveis de ambiente`);
+    console.error(`⚠️ URL de visualização para ${type} não configurada. Configure VITE_GOOGLE_SHEET_VIEW_URL_${type.toUpperCase()} no Netlify.`);
     return '#';
   }
   

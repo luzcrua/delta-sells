@@ -27,6 +27,7 @@ window.addEventListener('message', function(event) {
         // Se recebemos uma confirmação de sucesso, podemos notificar o usuário
         if (data.result === 'success' || data.success === true) {
           console.log('%c ✅ Dados salvos com sucesso na planilha!', 'color: #4CAF50; font-weight: bold');
+          console.log('Resposta completa:', data);
           
           // Exibir toast de sucesso para o usuário
           toast({
@@ -37,6 +38,7 @@ window.addEventListener('message', function(event) {
         } else if (data.result === 'error' || data.success === false) {
           console.error('%c ❌ Erro ao salvar dados na planilha!', 'color: #F44336; font-weight: bold');
           console.error('Erro:', data.message || data.error || 'Erro desconhecido');
+          console.error('Resposta completa:', data);
           
           // Exibir toast de erro para o usuário
           toast({
@@ -48,9 +50,11 @@ window.addEventListener('message', function(event) {
       } else if (typeof event.data === 'object' && event.data !== null) {
         // Se já for um objeto
         LogService.info('Objeto recebido do Google Apps Script:', event.data);
+        console.log('Objeto recebido do Google Apps Script:', event.data);
         
         if (event.data.result === 'success' || event.data.success === true) {
           console.log('%c ✅ Dados salvos com sucesso na planilha!', 'color: #4CAF50; font-weight: bold');
+          console.log('Resposta completa:', event.data);
           
           // Exibir toast de sucesso para o usuário
           toast({
@@ -61,6 +65,7 @@ window.addEventListener('message', function(event) {
         } else if (event.data.result === 'error' || event.data.success === false) {
           console.error('%c ❌ Erro ao salvar dados na planilha!', 'color: #F44336; font-weight: bold');
           console.error('Erro:', event.data.message || event.data.error || 'Erro desconhecido');
+          console.error('Resposta completa:', event.data);
           
           // Exibir toast de erro para o usuário
           toast({
@@ -72,6 +77,7 @@ window.addEventListener('message', function(event) {
       }
     } catch (error) {
       LogService.info('Recebida mensagem não-JSON do iframe:', event.data);
+      console.log('Recebida mensagem não-JSON do iframe:', event.data);
       
       // Se a mensagem contém 'success' ou 'sucesso', consideramos que o envio foi bem-sucedido
       if (typeof event.data === 'string') {
@@ -104,6 +110,17 @@ LogService.monitorCORSErrors();
 
 // Inicializar mensagem de log
 LogService.info('📊 DELTA SELLS CLIENTS - Aplicação iniciando...', {});
+console.log('%c 🚀 DELTA SELLS CLIENTS - Aplicação iniciando...', 'color: #2196F3; font-weight: bold');
+
+// Verificar e exibir informações de configuração
+console.log('%c 🔍 Verificando variáveis de ambiente...', 'color: #FF9800;');
+console.group('📋 Variáveis de ambiente carregadas:');
+console.log('VITE_ACCESS_PASSWORD:', import.meta.env.VITE_ACCESS_PASSWORD ? "✓ Definida" : "❌ Não definida");
+console.log('VITE_GOOGLE_SHEETS_URL_CLIENTE:', import.meta.env.VITE_GOOGLE_SHEETS_URL_CLIENTE ? "✓ Definida" : "❌ Não definida");
+console.log('VITE_GOOGLE_SHEETS_URL_LEAD:', import.meta.env.VITE_GOOGLE_SHEETS_URL_LEAD ? "✓ Definida" : "❌ Não definida");
+console.log('VITE_GOOGLE_SHEET_VIEW_URL_CLIENTE:', import.meta.env.VITE_GOOGLE_SHEET_VIEW_URL_CLIENTE ? "✓ Definida" : "❌ Não definida");
+console.log('VITE_GOOGLE_SHEET_VIEW_URL_LEAD:', import.meta.env.VITE_GOOGLE_SHEET_VIEW_URL_LEAD ? "✓ Definida" : "❌ Não definida");
+console.groupEnd();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -113,6 +130,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 )
 
 LogService.info('📊 DELTA SELLS CLIENTS - Interface renderizada', {});
+console.log('%c 🎨 Interface renderizada', 'color: #2196F3; font-weight: bold');
 
 // Mensagem adicional sobre o envio de dados
 if (DEBUG_MODE) {
