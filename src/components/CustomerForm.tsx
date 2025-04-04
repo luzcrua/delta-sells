@@ -566,23 +566,17 @@ const CustomerForm = () => {
                 id="valorTotal"
                 label="Valor Total"
                 value={watch("valorTotal")}
-                onChange={(event) => {
-                  // Remove formatação (ex.: "1.000,00" -> 1000.00)
-                  const rawValue = event.target.value.replace(/\D/g, ''); // Remove tudo que não é número
-                  const numericValue = parseFloat(rawValue) / 100; // Converte para número com duas casas decimais
-                  handleInputChange("valorTotal")(numericValue); // Atualiza o estado com o valor numérico
-                }}
+                onChange={handleInputChange("valorTotal")}
                 placeholder="R$ 0,00"
                 error={errors.valorTotal?.message}
                 className="font-semibold text-lg"
                 formatter={(value) => {
-                  // Usa a função formatCurrency existente, mas remove o cifrão
-                  return formatCurrency(value).replace('R$', '').trim();
-                }}
+                // Usa a função formatCurrency existente, mas remove o cifrão
+                return formatCurrency(value).replace('R$', '').trim();
+                  }}
                 required
                 readOnly={true}
               />
-            </div>
               
               {parcelamento && parcelamento !== "Sem parcelamento" && valorParcela && (
                 <div className="bg-delta-50 p-3 rounded-md border border-delta-100">
