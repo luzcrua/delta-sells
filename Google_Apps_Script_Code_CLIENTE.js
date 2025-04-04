@@ -12,12 +12,8 @@
 // Função que será chamada quando o Apps Script receber uma solicitação
 function doPost(e) {
   try {
-    // Log inicial para depuração
-    Logger.log("Recebendo solicitação POST para CLIENTE: " + JSON.stringify(e.parameter));
-    
     // Verificar se há dados na solicitação
     if (!e || !e.parameter || !e.parameter.data) {
-      Logger.log("Erro: Nenhum dado recebido na solicitação");
       return ContentService.createTextOutput(JSON.stringify({
         success: false,
         message: "Nenhum dado recebido."
@@ -25,15 +21,10 @@ function doPost(e) {
     }
     
     // Analisar os dados JSON da solicitação
-    const dataString = e.parameter.data;
-    Logger.log("Dados recebidos (string): " + dataString);
-    
-    const data = JSON.parse(dataString);
-    Logger.log("Dados parseados: " + JSON.stringify(data));
+    const data = JSON.parse(e.parameter.data);
     
     // Verificar se é o tipo correto de formulário
     if (data.formType !== 'cliente') {
-      Logger.log("Erro: Tipo de formulário incorreto: " + data.formType);
       return ContentService.createTextOutput(JSON.stringify({
         success: false,
         message: "Tipo de formulário incorreto. Este endpoint é apenas para dados de clientes."
@@ -42,7 +33,6 @@ function doPost(e) {
     
     // Obter a planilha ativa
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    Logger.log("Acessando planilha: " + ss.getName());
     
     // Verificar se a aba existe, se não, criar uma nova
     let sheet;
@@ -50,7 +40,6 @@ function doPost(e) {
       sheet = ss.getSheetByName("Cliente");
       if (!sheet) {
         // Criar nova aba se não existir
-        Logger.log("Aba Cliente não encontrada. Criando nova aba...");
         sheet = ss.insertSheet("Cliente");
         
         // Configurar cabeçalhos na ordem especificada
@@ -60,12 +49,8 @@ function doPost(e) {
           "LOCALIZACAO", "DESCONTO?", "NOME DO CUPOM", "FRETE", "DATA DE PAGAMENTO", 
           "DATA DE ENTREGA", "VALOR TOTAL", "OBSERVACOES"
         ]);
-        Logger.log("Cabeçalhos configurados na aba Cliente");
-      } else {
-        Logger.log("Aba Cliente encontrada");
       }
     } catch (err) {
-      Logger.log("Erro ao acessar a planilha: " + err.toString());
       return ContentService.createTextOutput(JSON.stringify({
         success: false,
         message: "Erro ao acessar a planilha: " + err.toString()
@@ -104,76 +89,34 @@ function doPost(e) {
       data.observacao || ""              // OBSERVACOES
     ];
     
-    Logger.log("Dados preparados para inserção: " + JSON.stringify(rowData));
-    
     // Encontrar a próxima linha vazia na planilha
     const lastRow = sheet.getLastRow();
     const startRow = lastRow + 1;
     
     // Adicionar os dados à planilha em uma única linha
     sheet.getRange(startRow, 1, 1, rowData.length).setValues([rowData]);
-    Logger.log("Dados inseridos na linha " + startRow);
     
     // Retornar uma resposta de sucesso
     return ContentService.createTextOutput(JSON.stringify({
       success: true,
       message: "Dados do cliente salvos com sucesso na planilha!",
       sheetName: "Cliente",
-      row: startRow,
-      timestamp: formattedTimestamp
+      row: startRow
     })).setMimeType(ContentService.MimeType.JSON);
     
   } catch (error) {
-    // Em caso de erro, registrar e retornar uma resposta de erro
-    Logger.log("Erro crítico no processamento: " + error.toString());
-    Logger.log("Stack trace: " + error.stack);
-    
+    // Em caso de erro, retornar uma resposta de erro
     return ContentService.createTextOutput(JSON.stringify({
       success: false,
-      message: "Erro ao processar dados: " + error.toString(),
-      errorDetail: error.stack
+      message: "Erro ao processar dados: " + error.toString()
     })).setMimeType(ContentService.MimeType.JSON);
   }
 }
 
 // Função que será chamada quando o Apps Script receber uma solicitação GET
 function doGet(e) {
-  Logger.log("Recebendo solicitação GET: " + JSON.stringify(e));
-  
   return ContentService.createTextOutput(JSON.stringify({
     success: true,
-    message: "O serviço Cliente está online e pronto para receber dados via POST.",
-    timestamp: new Date().toString()
+    message: "O serviço Cliente está online e pronto para receber dados via POST."
   })).setMimeType(ContentService.MimeType.JSON);
-}
-
-// Função para teste/depuração que pode ser executada manualmente no Apps Script
-function testFunctionality() {
-  const testData = {
-    formType: 'cliente',
-    nome: 'Teste Automático',
-    telefone: '(82) 99999-9999',
-    genero: 'Masculino',
-    linha: 'Oversized',
-    tipo: 'Camisa Normal',
-    cor: 'PRETO(A)',
-    tamanho: 'M',
-    valor: 'R$ 150,00',
-    formaPagamento: 'PIX',
-    parcelamento: 'Sem parcelamento',
-    valorTotal: 'R$ 165,00',
-    frete: '15,00',
-    dataPagamento: '04/04/25',
-    dataEntrega: '10/04/25',
-    observacao: 'Teste automático do sistema'
-  };
-  
-  const mockEvent = {
-    parameter: {
-      data: JSON.stringify(testData)
-    }
-  };
-  
-  const result = doPost(mockEvent);
-  Logger.log("Resultado do teste: " + result.getContent());
 }

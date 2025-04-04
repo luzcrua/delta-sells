@@ -1,175 +1,121 @@
 
-import React, { useState } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { LogOut, Users, Contact, AlertCircle, ArrowLeft } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "@/components/ui/use-toast";
-import CustomerForm from "@/components/CustomerForm";
-import LeadForm from "@/components/LeadForm";
-import DiagnosticsPanel from "@/components/DiagnosticsPanel";
-import AdvancedCORSTest from "@/components/AdvancedCORSTest";
-import GoogleSheetsConnectionTest from "@/components/GoogleSheetsConnectionTest";
+import { LogService } from "@/services/LogService";
 import { isWebhookConfigured } from "@/services/GoogleSheetsService";
-import { GOOGLE_SHEETS_URL, DEBUG_MODE } from "@/env";
+import LeadForm from "@/components/LeadForm";
+import CustomerForm from "@/components/CustomerForm";
+import DiagnosticsPanel from "@/components/DiagnosticsPanel";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
-const Dashboard: React.FC = () => {
+const Dashboard = () => {
+  const [activeTab, setActiveTab] = useState("cliente");
+  const [isConfigured, setIsConfigured] = useState(false);
   const navigate = useNavigate();
-  const [showDiagnostics, setShowDiagnostics] = useState(false);
-  const [showConnectionTest, setShowConnectionTest] = useState(false);
-  const isConfigured = isWebhookConfigured();
+  
+  useEffect(() => {
+    // Verificar se está autenticado
+    const auth = localStorage.getItem("deltaAuthenticated");
+    if (auth !== "true") {
+      LogService.warn("Tentativa de acesso não autorizado ao Dashboard");
+      navigate("/");
+      return;
+    }
+    
+    // Verificar se a URL do webhook está configurada
+    const configured = isWebhookConfigured();
+    setIsConfigured(configured);
+    LogService.info(`Dashboard - Webhook configurado: ${configured}`);
+    
+    // Log de inicialização da página
+    LogService.info("Página Dashboard carregada com sucesso");
+  }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("lastAuthTime");
-    localStorage.removeItem("lastAuthExpiry");
-    toast({
-      title: "Desconectado",
-      description: "Você saiu do sistema com sucesso."
-    });
+    LogService.info("Usuário realizou logout");
+    localStorage.removeItem("deltaAuthenticated");
     navigate("/");
   };
 
   return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-delta-800">DELTA SELLS CLIENTS</h1>
-          <p className="text-delta-600">Gerencie clientes e leads em um só lugar</p>
-        </div>
-        
-        <div className="flex space-x-2">
-          {DEBUG_MODE && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowConnectionTest(!showConnectionTest)}
-              className="hidden md:flex items-center gap-1.5"
+    <div className="min-h-screen bg-gradient-to-br from-delta-50 to-delta-100 p-4 md:p-8">
+      <div className="max-w-4xl mx-auto">
+        <header className="text-center mb-8 relative">
+          <div className="absolute top-0 right-0">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleLogout}
+              className="text-delta-700 hover:text-delta-900"
             >
-              {showConnectionTest ? "Ocultar Teste" : "Teste de Conexão"}
-              {!isConfigured && <AlertCircle className="h-4 w-4 text-amber-500" />}
+              <LogOut className="h-4 w-4 mr-2" />
+              Sair
             </Button>
+          </div>
+          
+          <h1 className="text-3xl md:text-4xl font-bold text-delta-950 mb-2">
+            DELTA SELLS CLIENTS
+          </h1>
+          <p className="text-delta-700 text-lg">
+            Cadastro de clientes e registro de vendas
+          </p>
+          
+          {!isConfigured && (
+            <div className="mt-4 bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-md">
+              <p className="text-sm">
+                ⚠️ A URL do App Script não está configurada no arquivo env.ts. Configure o arquivo para habilitar o envio direto para o Google Sheets.
+              </p>
+            </div>
           )}
           
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowDiagnostics(!showDiagnostics)}
-            className="hidden md:flex items-center gap-1.5"
+          {/* Painel de diagnóstico */}
+          <div className="mt-4">
+            <DiagnosticsPanel />
+          </div>
+        </header>
+
+        <div className="flex justify-center mb-6 border-b border-delta-200">
+          <button
+            className={`px-6 py-3 font-medium transition-colors ${
+              activeTab === "cliente"
+                ? "text-delta-800 border-b-2 border-delta-600"
+                : "text-delta-500 hover:text-delta-700"
+            }`}
+            onClick={() => {
+              setActiveTab("cliente");
+              LogService.info("Mudança de aba: Cliente");
+            }}
           >
-            {showDiagnostics ? "Ocultar Diagnóstico" : "Diagnóstico"}
-            {!isConfigured && <AlertCircle className="h-4 w-4 text-amber-500" />}
-          </Button>
-          
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={handleLogout}
-            className="flex items-center gap-1.5"
+            CLIENTE
+          </button>
+          <button
+            className={`px-6 py-3 font-medium transition-colors ${
+              activeTab === "lead"
+                ? "text-delta-800 border-b-2 border-delta-600"
+                : "text-delta-500 hover:text-delta-700"
+            }`}
+            onClick={() => {
+              setActiveTab("lead");
+              LogService.info("Mudança de aba: Lead");
+            }}
           >
-            <LogOut className="h-4 w-4" />
-            Sair
-          </Button>
+            LEAD
+          </button>
         </div>
+
+        <div className={activeTab === "cliente" ? "block" : "hidden"}>
+          <CustomerForm />
+        </div>
+
+        <div className={activeTab === "lead" ? "block" : "hidden"}>
+          <LeadForm />
+        </div>
+
+        <footer className="mt-8 text-center text-delta-700 text-sm">
+          <p>© 2025 DELTA SELLS. Todos os direitos reservados. Idealizado por Arinelson Santos</p>
+        </footer>
       </div>
-      
-      {!isConfigured && (
-        <Card className="mb-6 bg-amber-50 border-amber-200">
-          <CardContent className="p-4">
-            <div className="flex gap-3 items-start">
-              <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <h3 className="font-medium text-amber-800">Aviso: Configuração Incompleta</h3>
-                <p className="text-sm text-amber-700 mt-1">
-                  As URLs do Google Sheets não estão configuradas nas variáveis de ambiente. 
-                  {DEBUG_MODE ? (
-                    <span> Configure as variáveis <strong>VITE_GOOGLE_SHEETS_URL_CLIENTE</strong> e <strong>VITE_GOOGLE_SHEETS_URL_LEAD</strong> no arquivo .env ou nas variáveis de ambiente do Netlify.</span>
-                  ) : (
-                    <span> Entre em contato com o administrador do sistema.</span>
-                  )}
-                </p>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowDiagnostics(true)}
-                  className="mt-2 bg-white"
-                >
-                  Ver Diagnóstico
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      
-      {showConnectionTest && (
-        <div className="mb-6">
-          <GoogleSheetsConnectionTest />
-          <div className="mt-3 flex justify-end">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowConnectionTest(false)}
-              className="flex items-center gap-1.5"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Ocultar Teste de Conexão
-            </Button>
-          </div>
-        </div>
-      )}
-      
-      {showDiagnostics && (
-        <div className="mb-6">
-          <DiagnosticsPanel />
-          {DEBUG_MODE && <AdvancedCORSTest />}
-          <div className="mt-3 flex justify-end">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowDiagnostics(false)}
-              className="flex items-center gap-1.5"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Ocultar Diagnóstico
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <Tabs defaultValue="cliente" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="cliente" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Registro de Cliente
-          </TabsTrigger>
-          <TabsTrigger value="lead" className="flex items-center gap-2">
-            <Contact className="h-4 w-4" />
-            Registro de Lead
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="cliente" className="space-y-4">
-          <div className="grid gap-4">
-            <CustomerForm />
-          </div>
-        </TabsContent>
-
-        <TabsContent value="lead" className="space-y-4">
-          <div className="grid gap-4">
-            <LeadForm />
-          </div>
-        </TabsContent>
-      </Tabs>
-
-      <Separator className="my-6" />
-
-      <footer className="text-center text-sm text-muted-foreground">
-        <p>© {new Date().getFullYear()} DELTA SELLS CLIENTS. Todos os direitos reservados.</p>
-      </footer>
     </div>
   );
 };
